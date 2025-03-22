@@ -40,14 +40,14 @@
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="AINoFc_AuR4UppCe1i0D-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="AINoFc_AuR4UppCe1i0D-1" target="AINoFc_AuR4UppCe1i0D-15">
+        <mxCell id="AINoFc_AuR4UppCe1i0D-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fillColor=#66FF66;strokeColor=light-dark(#000000,#FFFFFF);" edge="1" parent="1" source="AINoFc_AuR4UppCe1i0D-1" target="AINoFc_AuR4UppCe1i0D-15">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="390" y="-20" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="AINoFc_AuR4UppCe1i0D-17" value="PWM" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="AINoFc_AuR4UppCe1i0D-16">
+        <mxCell id="AINoFc_AuR4UppCe1i0D-17" value="PWM" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fillColor=#66FF66;" vertex="1" connectable="0" parent="AINoFc_AuR4UppCe1i0D-16">
           <mxGeometry x="0.3401" y="2" relative="1" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
@@ -78,8 +78,11 @@
         <mxCell id="AINoFc_AuR4UppCe1i0D-12" value="Button itslef" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="640" y="430" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="AINoFc_AuR4UppCe1i0D-15" value="Motors for wheels" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="AINoFc_AuR4UppCe1i0D-15" value="Motors for wheels" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#66FF66;" vertex="1" parent="1">
           <mxGeometry x="640" y="-50" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="AINoFc_AuR4UppCe1i0D-23" value="Optional" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="640" y="-90" width="60" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
