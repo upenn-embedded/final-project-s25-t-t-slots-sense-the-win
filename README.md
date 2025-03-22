@@ -1,10 +1,11 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/WXeqVgks)
+
 # final-project-skeleton
 
 * Team Number: 6
 * Team Name: T&T Slots - Sense the Win
 * Team Members: Theodor Bulacovschi, Yiding Tian
-* GitHub Repository URL: <https://github.com/upenn-embedded/final-project-s25-t-t-slots-sense-the-win>
+* GitHub Repository URL: [https://github.com/upenn-embedded/final-project-s25-t-t-slots-sense-the-win](https://github.com/upenn-embedded/final-project-s25-t-t-slots-sense-the-win)
 * GitHub Pages Website URL: [for final submission]
 
 ## Final Project Proposal
@@ -13,13 +14,21 @@
 
 *In a few sentences, describe your final project.*
 
+Our project is an interactive chance-based gaming device that takes into account the player's vital signs to adjust the probability of winning, maximizing engagement and retention. In lay-man's terms, it's a slot machine that measures the user's pulse and changes the odds to keep them playing longer.
+
 ### 2. Motivation
 
 *What is the problem that you are trying to solve? Why is this project interesting? What is the intended purpose?*
 
+Considering the abundance of health-tracking initiatives, we thought of making a unique device, merging entertainment and bio-monitoring. This device would also be useful as a case study for the efficiency of variable-odds gaming devices, and the effects on the users.
+
 ### 3. System Block Diagram
 
 *Show your high level design, as done in WS1 and WS2. What are the critical components in your system? How do they communicate (I2C?, interrupts, ADC, etc.)? What power regulation do you need?*
+
+Motors for actual slot machine wheels are optional, and they would require extra power beyond what the AtMega can provide. However, their implementation would not be that difficult, considering the power circuitry already identified for WS1.
+
+![Diagram](./System_block_diagram.drawio.png)
 
 ### 4. Design Sketches
 
@@ -35,14 +44,17 @@
 
 Here, you will define any special terms, acronyms, or abbreviations you plan to use for hardware
 
+HR - heart rate
+
 **5.2 Functionality**
 
-| ID     | Description                                                                                                                                                                                                              |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| SRS-01 | The IMU 3-axis acceleration will be measured with 16-bit depth every 100 milliseconds +/-10 milliseconds                                                                                                                 |
-| SRS-02 | The distance sensor shall operate and report values at least every .5 seconds.                                                                                                                                           |
-| SRS-03 | Upon non-nominal distance detected (i.e., the trap mechanism has changed at least 10 cm from the nominal range), the system shall be able to detect the change and alert the user in a timely manner (within 5 seconds). |
-| SRS-04 | Upon a request from the user, the system shall get an image from the internal camera and upload the image to the user system within 10s.                                                                                 |
+| ID     | Description                                                                                                                                                                                                                                                    |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SRS-01 | The ATmega shall continously prompt the user to play, telling them to keep their hand pressing the button until the HR sensor establishes their pulse.                                                                                                         |
+| SRS-02 | The HR sensor shall be measuring only while the button is pressed, to conceal its existance.                                                                                                                                                                   |
+| SRS-03 | Upon button release, the ATmega shall change the odds in the following manner: if the HR is low, increase odds of winning to increase excitement, HR, and engagement. If HR is high, decrease odds to elongate play, build anticipation, and increase profits. |
+| SRS-04 | The buzzer shall play varied exciting tunes, encouraging continued play, and shall react to game outcomes.                                                                                                                                                     |
+| SRS-05 | If implemented, the wheels should begin spinning on button press, and sequentially stop after the button release, according to the game outcome.                                                                                                               |
 
 ### 6. Hardware Requirements Specification (HRS)
 
@@ -56,12 +68,13 @@ Here, you will define any special terms, acronyms, or abbreviations you plan to 
 
 **6.2 Functionality**
 
-| ID     | Description                                                                                                                        |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| HRS-01 | A distance sensor shall be used for obstacle detection. The sensor shall detect obstacles at a maximum distance of at least 10 cm. |
-| HRS-02 | A noisemaker shall be inside the trap with a strength of at least 55 dB.                                                           |
-| HRS-03 | An electronic motor shall be used to reset the trap remotely and have a torque of 40 Nm in order to reset the trap mechanism.      |
-| HRS-04 | A camera sensor shall be used to capture images of the trap interior. The resolution shall be at least 480p.                       |
+| ID     | Description                                                                                                                                                                                                  |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| HRS-01 | A heart rate monitor shall be used for monitoring user vital signs. It should be able to measure HR in the range 50-180 BPM.                                                                                 |
+| HRS-02 | A buzzer shall be able play various sound frequencies and patterns in a pleasant manner.                                                                                                                     |
+| HRS-03 | A display shall be able to display prompts, information and potentially animations to the user.                                                                                                              |
+| HRS-04 | A button shall be made big enough to conceal the HR sensor, while being transparent in the region required for measurements.                                                                                 |
+| HRS-05 | If implemented, the motors spinning the slot wheels should have variable speed, make the clicking sounds specific to slot machines, and be able to stop at precises positions according to the game outcome. |
 
 ### 7. Bill of Materials (BOM)
 
@@ -69,20 +82,24 @@ Here, you will define any special terms, acronyms, or abbreviations you plan to 
 
 *In addition to this written response, copy the Final Project BOM Google Sheet and fill it out with your critical components (think: processors, sensors, actuators). Include the link to your BOM in this section.*
 
+[https://docs.google.com/spreadsheets/d/1qyvZnWI3Nq7rkF-FLIlKeIRL2Z1_xs5uF36gUQWZ2QY/edit?usp=sharing](https://docs.google.com/spreadsheets/d/1qyvZnWI3Nq7rkF-FLIlKeIRL2Z1_xs5uF36gUQWZ2QY/edit?usp=sharing)
+
 ### 8. Final Demo Goals
 
 *How will you demonstrate your device on demo day? Will it be strapped to a person, mounted on a bicycle, require outdoor space? Think of any physical, temporal, and other constraints that could affect your planning.*
+
+It will be on a table. We will have well-rested (calm heart rate) players play, then do jumping jacks to elevate the players heart rate and see the different effects on the outcomes of the slot machine.
 
 ### 9. Sprint Planning
 
 *You've got limited time to get this project done! How will you plan your sprint milestones? How will you distribute the work within your team? Review the schedule in the final project manual for exact dates.*
 
-| Milestone  | Functionality Achieved | Distribution of Work |
-| ---------- | ---------------------- | -------------------- |
-| Sprint #1  |                        |                      |
-| Sprint #2  |                        |                      |
-| MVP Demo   |                        |                      |
-| Final Demo |                        |                      |
+| Milestone  | Functionality Achieved                                                   | Distribution of Work |
+| ---------- | ------------------------------------------------------------------------ | -------------------- |
+| Sprint #1  | Display prompts on LCD                                                   | 50%, details TBD     |
+| Sprint #2  | Communicate over I2C with HR sensor                                      | 50%, details TBD     |
+| MVP Demo   | Continuous HR values, Display game outcomes                              | 50%, details TBD     |
+| Final Demo | HR monitor only when button is pressed, variable odds, animations, sound | 50%, details TBD     |
 
 **This is the end of the Project Proposal section. The remaining sections will be filled out based on the milestone schedule.**
 
