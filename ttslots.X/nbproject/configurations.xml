@@ -7,6 +7,7 @@
       <itemPath>ASCII_LUT.h</itemPath>
       <itemPath>LCD_GFX.h</itemPath>
       <itemPath>ST7735.h</itemPath>
+      <itemPath>uart.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -23,6 +24,7 @@
       <itemPath>LCD_GFX.c</itemPath>
       <itemPath>ST7735.c</itemPath>
       <itemPath>main.c</itemPath>
+      <itemPath>uart.c</itemPath>
     </logicalFolder>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>
