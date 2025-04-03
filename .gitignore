@@ -20,3 +20,8 @@
 
 #User Specific Files
 *.atsuo
+/ttslots.X/dist/
+/ttslots.X/build/
+/ttslots.X/.generated_files
+
+*.DS_Store
