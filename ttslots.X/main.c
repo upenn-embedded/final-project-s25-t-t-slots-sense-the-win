@@ -6,6 +6,10 @@
 #include "ST7735.h"
 #include "LCD_GFX.h"
 #include "uart.h"
+#include "i2c.h"
+#include "i2c_test.h"
+#include "imu.h"
+
 
 // Define states for the slot machine
 typedef enum {

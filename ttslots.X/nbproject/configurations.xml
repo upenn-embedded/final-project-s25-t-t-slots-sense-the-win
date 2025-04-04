@@ -8,6 +8,9 @@
       <itemPath>LCD_GFX.h</itemPath>
       <itemPath>ST7735.h</itemPath>
       <itemPath>uart.h</itemPath>
+      <itemPath>i2c.h</itemPath>
+      <itemPath>i2c_test.h</itemPath>
+      <itemPath>imu.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -25,6 +28,7 @@
       <itemPath>ST7735.c</itemPath>
       <itemPath>main.c</itemPath>
       <itemPath>uart.c</itemPath>
+      <itemPath>i2c.c</itemPath>
     </logicalFolder>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>
