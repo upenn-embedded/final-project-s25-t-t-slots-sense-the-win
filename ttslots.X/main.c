@@ -118,19 +118,21 @@ void setupButtonInterrupt(void) {
     EIMSK |= (1 << INT0);
 }
 
-// Setup heart rate sensor interrupt on PC3 (PCINT11)
+// Setup heart rate sensor interrupt on PD3 (INT1)
 void setupHeartRateSensorInterrupt(void) {
-    // Set PC3 as input
-    DDRC &= ~(1 << DDC3);
+    // Set PD3 as input
+    DDRD &= ~(1 << DDD3);
     
-    // Enable pull-up resistor on PC3
-    PORTC |= (1 << PORTC3);
+    // Enable pull-up resistor on PD3
+    PORTD |= (1 << PORTD3);
     
-    // Enable pin change interrupt for PORTC
-    PCICR |= (1 << PCIE1);
+    // Configure INT1 to trigger on falling edge
+    // ISC11 = 1, ISC10 = 0 for falling edge
+    EICRA |= (1 << ISC11);
+    EICRA &= ~(1 << ISC10);
     
-    // Enable pin change interrupt for PC3 (PCINT11)
-    PCMSK1 |= (1 << PCINT11);
+    // Enable INT1 interrupt
+    EIMSK |= (1 << INT1);
 }
 
 // Display welcome screen
@@ -257,8 +259,6 @@ void displayMeasuringPrompt(void) {
             LCD_drawString(70, 40, "\\", WHITE, BLACK);
             break;
     }
-    
-    printf("HR: %u BPM\r\n", heartRate);
     
     // Display heart rate if it changed
     if (heartRate != lastHeartRateDisplayed) {
@@ -454,19 +454,16 @@ ISR(INT0_vect) {
             animationFrame = 0;
         }
     }
-    
 }
 
-// Heart rate sensor interrupt handler (PCINT11 - PC3)
-ISR(PCINT1_vect) {
-    // Check if PC3 went low (interrupt pin is active low)
-    if (!(PINC & (1 << PINC3))) {
-        // Set flag for main loop to process
-        heartRateDataReady = 1;
-        
-        // Update RNG seed on each interrupt for more randomness
-        rand_seed ^= (uint16_t)TCNT0;
-    }
+// Heart rate sensor interrupt handler (INT1 - PD3)
+ISR(INT1_vect) {
+    // INT1 interrupt is configured for falling edge, so we don't need to check the pin state
+    // Set flag for main loop to process
+    heartRateDataReady = 1;
+    
+    // Update RNG seed on each interrupt for more randomness
+    rand_seed ^= (uint16_t)TCNT0;
 }
 
 // Simple Linear Congruential Generator (LCG) random number implementation
@@ -488,7 +485,6 @@ int main(void) {
     
     // Start with welcome screen
     currentState = STATE_WELCOME;
-    currentState = STATE_MEASURING;
     
     // Main loop
     while (1) {
