@@ -443,6 +443,7 @@ ISR(INT0_vect) {
     // Debounce
     _delay_ms(10);
     
+    
     // Check if button is still pressed
     if (!(PIND & (1 << PIND2))) {
         // Button was pressed
@@ -454,6 +455,9 @@ ISR(INT0_vect) {
             animationFrame = 0;
         }
     }
+    // Button was pressed
+
+    printf("button pressed, buttonPressed = %d\n", buttonPressed);
 }
 
 // Heart rate sensor interrupt handler (INT1 - PD3)
