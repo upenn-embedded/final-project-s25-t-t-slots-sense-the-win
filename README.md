@@ -121,10 +121,15 @@ Configure I2C connection of HR sensor. Figure out how to integrate the sensor wi
 ## Sprint Review #2
 
 ### Last week's progress
+I2C testing on HR sensor mostly completed. Compatible buttons arrived. Worked on drilling holes and integrating the button with the sensor. 
 
 ### Current state of project
+Close to MVP. HR sensor is configured on an individual profile. Button and sensor is about to get integrated together. 
+![1744392548774](image/README/1744392548774.png)
+![1744392592783](image/README/1744392592783.png)
 
 ### Next week's plan
+Integrate the HR sensor driver code to the main game project. Integrate the button and sensor in hardware.
 
 ## MVP Demo
 
