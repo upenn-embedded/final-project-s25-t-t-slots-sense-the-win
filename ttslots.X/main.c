@@ -76,6 +76,29 @@ void initialize(void) {
     _delay_ms(500); // Give time for sensor to stabilize
     MAX30102_init();
     
+    // Force a new sample to generate an interrupt
+printf("Triggering a new sample...\r\n");
+// First read current mode
+uint8_t currentMode;
+I2C_readRegister(MAX30102_I2C_ADDR, &currentMode, MAX30102_MODE_CONFIG);
+// Restart the mode to trigger new samples
+I2C_writeRegister(MAX30102_I2C_ADDR, currentMode, MAX30102_MODE_CONFIG);
+
+// Wait a moment for samples to be generated
+_delay_ms(500);
+
+// Read interrupt status directly to see if any interrupt occurred
+uint8_t intStatus;
+I2C_readRegister(MAX30102_I2C_ADDR, &intStatus, MAX30102_INT_STATUS_1);
+printf("Interrupt Status after sample: 0x%02X\r\n", intStatus);
+
+// Check if DATA_RDY or A_FULL flags are set
+if (intStatus & (MAX30102_INT_DATA_RDY | MAX30102_INT_A_FULL)) {
+    printf("Interrupt flags set, but ISR not triggered.\r\n");
+} else {
+    printf("No interrupt flags set. Sensor may not be sampling.\r\n");
+}
+    
     // Initialize the screen
     LCD_setScreen(BLACK);
     
@@ -106,6 +129,7 @@ void initialize(void) {
     printf("System Initialized\r\n");
     printf("MAX30102 Part ID: 0x%02X\r\n", MAX30102_readPartID());
     printf("MAX30102 Rev ID: 0x%02X\r\n", MAX30102_getRevisionID());
+    
 }
 
 // Setup button interrupt on INT0 (PD2)
@@ -126,13 +150,14 @@ void setupHeartRateSensorInterrupt(void) {
     // Enable pull-up resistor on PD3
     PORTD |= (1 << PORTD3);
     
-    // Configure INT1 to trigger on falling edge
-    // ISC11 = 1, ISC10 = 0 for falling edge
-    EICRA |= (1 << ISC11);
-    EICRA &= ~(1 << ISC10);
+    // Configure INT1 to trigger on RISING edge since the pin is LOW when idle
+    // ISC11 = 1, ISC10 = 1 for rising edge
+    EICRA |= (1 << ISC11) | (1 << ISC10);
     
     // Enable INT1 interrupt
     EIMSK |= (1 << INT1);
+    
+    printf("INT1 configured for RISING edge trigger\r\n");
 }
 
 // Display welcome screen
@@ -443,26 +468,42 @@ ISR(INT0_vect) {
     // Debounce
     _delay_ms(10);
     
-    
     // Check if button is still pressed
     if (!(PIND & (1 << PIND2))) {
         // Button was pressed
         buttonPressed = 1;
-        
+        printf("pressing\n");
         // If we're in PRESS_BUTTON state, move to MEASURING state
         if (currentState == STATE_PRESS_BUTTON) {
             currentState = STATE_MEASURING;
             animationFrame = 0;
         }
     }
+    
     // Button was pressed
-
     printf("button pressed, buttonPressed = %d\n", buttonPressed);
 }
 
 // Heart rate sensor interrupt handler (INT1 - PD3)
 ISR(INT1_vect) {
-    // INT1 interrupt is configured for falling edge, so we don't need to check the pin state
+    // Read the interrupt status register to see what triggered the interrupt
+    uint8_t intStatus1, intStatus2;
+    
+    // Disable interrupts during I2C communication to prevent nested interrupts
+    cli();
+    
+    // Read interrupt status registers
+    I2C_readRegister(MAX30102_I2C_ADDR, &intStatus1, MAX30102_INT_STATUS_1);
+    I2C_readRegister(MAX30102_I2C_ADDR, &intStatus2, MAX30102_INT_STATUS_2);
+    
+    // Re-enable interrupts
+    sei();
+    
+    // For debugging
+    printf("INT1 ISR triggered!\r\n");
+    printf("Status1: 0x%02X, Status2: 0x%02X\r\n", intStatus1, intStatus2);
+    printf("INT1 pin state: %d\r\n", (PIND & (1 << PIND3)) ? 1 : 0);
+    
     // Set flag for main loop to process
     heartRateDataReady = 1;
     

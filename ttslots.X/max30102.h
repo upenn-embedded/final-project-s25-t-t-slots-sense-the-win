@@ -60,5 +60,6 @@ void MAX30102_enableDATARDY(void);
 void MAX30102_disableDATARDY(void);
 void MAX30102_setFIFOAverage(uint8_t samples);
 void MAX30102_setFIFOAlmostFull(uint8_t samples);
+void MAX30102_clearInterrupts(void);
 
 #endif // MAX30102_H

@@ -46,6 +46,21 @@ void MAX30102_init(void) {
     I2C_readRegister(MAX30102_I2C_ADDR, &intStatus, MAX30102_INT_STATUS_1);
     I2C_readRegister(MAX30102_I2C_ADDR, &intStatus, MAX30102_INT_STATUS_2);
     
+//    uint8_t intEnableReg;
+//I2C_readRegister(MAX30102_I2C_ADDR, &intEnableReg, MAX30102_INT_ENABLE_1);
+//printf("Interrupt Enable Register: 0x%02X (Expected: 0x%02X)\r\n", 
+//       intEnableReg, (MAX30102_INT_A_FULL | MAX30102_INT_DATA_RDY));
+//
+//// Check interrupt status after clearing
+//I2C_readRegister(MAX30102_I2C_ADDR, &intStatus, MAX30102_INT_STATUS_1);
+//printf("Interrupt Status Register after clear: 0x%02X\r\n", intStatus);
+//
+//// Also check the INT pin level using direct port reading
+//printf("INT pin state: %d (should be high/1 when idle)\r\n", (PIND & (1 << PIND3)) ? 1 : 0);
+    
+    printf("Explicitly clearing interrupts before enabling...\r\n");
+    MAX30102_clearInterrupts();
+    
     printf("MAX30102 Initialized\r\n");
 }
 
@@ -284,3 +299,14 @@ void MAX30102_setFIFOAlmostFull(uint8_t samples) {
     
     I2C_writeRegister(MAX30102_I2C_ADDR, fifoConfig, MAX30102_FIFO_CONFIG);
 }
+
+void MAX30102_clearInterrupts(void) {
+    uint8_t intStatus1, intStatus2;
+    
+    // Reading the interrupt status registers clears them
+    I2C_readRegister(MAX30102_I2C_ADDR, &intStatus1, MAX30102_INT_STATUS_1);
+    I2C_readRegister(MAX30102_I2C_ADDR, &intStatus2, MAX30102_INT_STATUS_2);
+    
+    printf("Cleared interrupts - Status1: 0x%02X, Status2: 0x%02X\r\n", intStatus1, intStatus2);
+}
+
