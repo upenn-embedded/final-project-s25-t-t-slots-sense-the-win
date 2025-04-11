@@ -396,133 +396,171 @@ bool max30102_read_revision_id(uint8_t *rev_id) {
  * @param result Pointer to store the results
  * @return true if calculation successful, false otherwise
  */
+/**
+ * @brief Process samples to calculate heart rate and SpO2
+ * @param samples Array of samples
+ * @param count Number of samples
+ * @param result Pointer to store the results
+ * @return true if calculation successful, false otherwise
+ */
+/**
+ * @brief Process samples to calculate heart rate and SpO2
+ * @param samples Array of samples
+ * @param count Number of samples
+ * @param result Pointer to store the results
+ * @return true if calculation successful, false otherwise
+ */
+/**
+ * @brief Process samples to calculate heart rate and SpO2
+ * @param samples Array of samples
+ * @param count Number of samples
+ * @param result Pointer to store the results
+ * @return true if calculation successful, false otherwise
+ */
 bool max30102_calculate_hr_spo2(max30102_fifo_sample_t *samples, uint8_t count, max30102_result_t *result) {
     if (count == 0 || samples == NULL || result == NULL) {
         return false;
     }
     
-    // Variables for DC tracking (moving average)
-    float ir_dc_sum = 0;
-    float red_dc_sum = 0;
+    // DC tracking and buffer for signal processing
+    static int32_t dc_filtered_ir[128]; // Buffer for DC-removed signal
+    static uint8_t buffer_pos = 0;      // Position in circular buffer
+    static uint8_t peaks_detected = 0;  // Number of peaks detected
+    static uint32_t last_peak_time = 0; // Time of last peak (in samples)
+    static uint32_t peak_intervals[8];  // Store last 8 peak-to-peak intervals
+    static uint8_t peak_interval_idx = 0;
     
-    // Variables for AC detection
-    uint32_t ir_max = 0;
+    // Variables for signal analysis
     uint32_t ir_min = 0xFFFFFFFF;
-    uint32_t red_max = 0;
+    uint32_t ir_max = 0;
+    uint32_t ir_avg = 0;
+    
+    // Variables for SpO2 calculation
     uint32_t red_min = 0xFFFFFFFF;
+    uint32_t red_max = 0;
+    uint32_t red_avg = 0;
     
-    // Variables for pulse detection
-    uint8_t pulse_count = 0;
-    uint32_t last_beat_time = 0;
-    uint32_t beat_intervals[10] = {0};
-    uint8_t beat_interval_index = 0;
-    bool looking_for_peak = true;
-    bool peak_detected = false;
-    uint32_t ir_threshold = 0;
-    
-    // Process each sample
+    // First pass - find min, max and avg values
     for (uint8_t i = 0; i < count; i++) {
-        // Update DC values (slow moving average)
-        ir_dc_sum += samples[i].ir;
-        red_dc_sum += samples[i].red;
+        ir_avg += samples[i].ir;
+        red_avg += samples[i].red;
         
-        // Track min/max for AC detection
         if (samples[i].ir > ir_max) ir_max = samples[i].ir;
         if (samples[i].ir < ir_min) ir_min = samples[i].ir;
         if (samples[i].red > red_max) red_max = samples[i].red;
         if (samples[i].red < red_min) red_min = samples[i].red;
-        
-        // Simple peak detection for heart rate
-        if (i > 0) {
-            // Calculate adaptive threshold (fraction of AC component)
-            if (ir_threshold == 0) {
-                ir_threshold = (ir_max - ir_min) / 4;
-            }
-            
-            // Looking for peak
-            if (looking_for_peak) {
-                if (samples[i].ir > samples[i-1].ir) {
-                    // Signal is rising
-                    peak_detected = false;
-                } else if (samples[i].ir < samples[i-1].ir && 
-                           (samples[i-1].ir - ir_min) > ir_threshold) {
-                    // Signal is falling after rising above threshold - peak detected
-                    peak_detected = true;
-                    looking_for_peak = false;
-                    
-                    // Record beat interval if this isn't the first peak
-                    if (last_beat_time > 0) {
-                        uint32_t interval = i - last_beat_time;
-                        
-                        // Store interval if reasonable (avoid noise)
-                        if (interval > 10) {  // Minimum interval for reasonable HR
-                            beat_intervals[beat_interval_index] = interval;
-                            beat_interval_index = (beat_interval_index + 1) % 10;
-                            pulse_count++;
-                        }
-                    }
-                    
-                    last_beat_time = i;
-                }
-            } else {
-                // Looking for trough after peak
-                if (samples[i].ir < ir_min + ir_threshold) {
-                    looking_for_peak = true;
-                }
-            }
-        }
     }
     
-    // Calculate DC values (average)
-    float ir_dc = ir_dc_sum / count;
-    float red_dc = red_dc_sum / count;
+    // Calculate averages
+    ir_avg /= count;
+    red_avg /= count;
     
-    // Use previous DC values if they exist and current ones are zero or very small
-    if (ir_dc < 1000 && ir_dc_prev > 1000) ir_dc = ir_dc_prev;
-    if (red_dc < 1000 && red_dc_prev > 1000) red_dc = red_dc_prev;
+    // Check if valid signal is present (finger on sensor)
+    bool finger_present = false;
     
-    // Store DC values for next calculation
-    ir_dc_prev = ir_dc;
-    red_dc_prev = red_dc;
+    // If IR average is significant and there's some variation, consider finger present
+    if (ir_avg > 5000 && (ir_max - ir_min) > (ir_avg * 0.01)) {
+        finger_present = true;
+    }
     
-    // Calculate AC values (peak-to-peak)
-    uint32_t ir_ac = ir_max - ir_min;
-    uint32_t red_ac = red_max - red_min;
+    // If finger not present, invalid HR and maybe valid SpO2
+    if (!finger_present) {
+        result->hr_valid = false;
+        
+        // Calculate SpO2 even without valid HR if signal levels are reasonable
+        if (red_avg > 1000 && ir_avg > 1000) {
+            float red_ac = (float)(red_max - red_min);
+            float ir_ac = (float)(ir_max - ir_min);
+            float ratio = (red_ac * ir_avg) / (ir_ac * red_avg);
+            
+            // Empirical formula for SpO2 calculation
+            float spo2 = 110.0f - 25.0f * ratio;
+            
+            // Clamp to physiological range
+            if (spo2 > 100.0f) spo2 = 100.0f;
+            if (spo2 < 0.0f) spo2 = 0.0f;
+            
+            result->spo2 = (int32_t)spo2;
+            result->spo2_valid = (spo2 >= 70.0f && spo2 <= 100.0f);
+        } else {
+            result->spo2_valid = false;
+        }
+        
+        return true;
+    }
     
-    // Use previous AC values if current ones are zero or very small
-    if (ir_ac < 50 && ir_ac_prev > 50) ir_ac = ir_ac_prev;
-    if (red_ac < 50 && red_ac_prev > 50) red_ac = red_ac_prev;
+    // Second pass - process signal for heart rate detection
+    // Apply DC removal and store filtered values
+    for (uint8_t i = 0; i < count; i++) {
+        // DC removal (high-pass filter)
+        int32_t filtered = (int32_t)samples[i].ir - (int32_t)ir_avg;
+        
+        // Store in circular buffer
+        dc_filtered_ir[buffer_pos] = filtered;
+        buffer_pos = (buffer_pos + 1) % 128;
+    }
     
-    // Store AC values for next calculation
-    ir_ac_prev = ir_ac;
-    red_ac_prev = red_ac;
+    // Calculate heart rate from peak detection
+    // Look for peaks in the most recent data
+    int32_t peak_threshold = (ir_max - ir_min) / 10; // 10% of peak-to-peak as threshold
+    if (peak_threshold < 10) peak_threshold = 10;    // Minimum threshold
     
-    // Calculate heart rate
-    if (pulse_count >= 2) {
+    uint32_t current_sample = 0;
+    
+    // Process full buffer for peak detection
+    for (uint8_t i = 0; i < 124; i++) {
+        uint8_t idx = (buffer_pos + i) % 128;
+        uint8_t prev_idx = (idx + 127) % 128;
+        uint8_t next_idx = (idx + 1) % 128;
+        
+        // Check if this point is a peak (higher than neighbors and above threshold)
+        if (dc_filtered_ir[idx] > peak_threshold && 
+            dc_filtered_ir[idx] > dc_filtered_ir[prev_idx] && 
+            dc_filtered_ir[idx] > dc_filtered_ir[next_idx]) {
+            
+            // Found a peak, calculate interval if not first peak
+            if (last_peak_time > 0) {
+                uint32_t interval = current_sample - last_peak_time;
+                
+                // Only consider reasonable intervals (corresponding to 40-220 BPM at 100Hz)
+                // 100 Hz * 60 sec/min / 220 BPM = 27 samples minimum
+                // 100 Hz * 60 sec/min / 40 BPM = 150 samples maximum
+                if (interval >= 27 && interval <= 150) {
+                    // Store interval
+                    peak_intervals[peak_interval_idx] = interval;
+                    peak_interval_idx = (peak_interval_idx + 1) % 8;
+                    peaks_detected++;
+                }
+            }
+            
+            last_peak_time = current_sample;
+        }
+        
+        current_sample++;
+    }
+    
+    // Calculate heart rate if enough peaks detected
+    if (peaks_detected >= 3) {
         // Average the intervals
-        uint32_t total_interval = 0;
+        uint32_t sum = 0;
         uint8_t valid_intervals = 0;
         
-        for (uint8_t i = 0; i < 10; i++) {
-            if (beat_intervals[i] > 0) {
-                total_interval += beat_intervals[i];
+        for (uint8_t i = 0; i < 8; i++) {
+            if (peak_intervals[i] > 0) {
+                sum += peak_intervals[i];
                 valid_intervals++;
             }
         }
         
         if (valid_intervals > 0) {
-            float avg_interval = (float)total_interval / valid_intervals;
+            float avg_interval = (float)sum / valid_intervals;
             
-            // Calculate heart rate (bpm) based on sample rate and interval
-            // Assuming 100Hz sample rate (adjust if using different rate)
-            float sample_rate = 100.0;  // 100Hz
-            int32_t heart_rate = (int32_t)(60.0 * sample_rate / avg_interval);
+            // Convert to BPM (assuming 100Hz sample rate)
+            int32_t heart_rate = (int32_t)((60.0f * 100.0f) / avg_interval);
             
-            // Filter out unreasonable values
-            if (heart_rate >= 40 && heart_rate <= 240) {
-                // Store in history buffer
-                heart_rate_history[history_index] = heart_rate;
-                result->heart_rate = heart_rate;
+            // Validate heart rate is physiologically reasonable
+            if (heart_rate >= 40 && heart_rate <= 220) {
+                result->heart_rate = heart_rate / 2;
                 result->hr_valid = true;
             } else {
                 result->hr_valid = false;
@@ -531,35 +569,25 @@ bool max30102_calculate_hr_spo2(max30102_fifo_sample_t *samples, uint8_t count, 
             result->hr_valid = false;
         }
     } else {
-        // Not enough pulses detected
         result->hr_valid = false;
     }
     
     // Calculate SpO2
-    if (ir_ac > 0 && red_ac > 0 && ir_dc > 0 && red_dc > 0) {
-        // Calculate R value (ratio of ratios)
-        float r = (red_ac * ir_dc) / (ir_ac * red_dc);
+    float red_ac = (float)(red_max - red_min);
+    float ir_ac = (float)(ir_max - ir_min);
+    
+    if (red_ac > 0 && ir_ac > 0 && red_avg > 0 && ir_avg > 0) {
+        float ratio = (red_ac * ir_avg) / (ir_ac * red_avg);
         
-        // SpO2 empirical formula based on R
-        // Note: These constants need calibration from clinical studies
-        float spo2 = 110.0f - 25.0f * r;  // Approximate formula
+        // SpO2 empirical formula
+        float spo2 = 110.0f - 25.0f * ratio;
         
         // Clamp to valid range
         if (spo2 > 100.0f) spo2 = 100.0f;
         if (spo2 < 0.0f) spo2 = 0.0f;
         
-        // Store in result
-        int32_t spo2_int = (int32_t)spo2;
-        
-        // Store in history buffer
-        spo2_history[history_index] = spo2_int;
-        
-        // Update history index
-        history_index = (history_index + 1) % 8;
-        
-        // Set result
-        result->spo2 = spo2_int;
-        result->spo2_valid = (spo2_int >= 70 && spo2_int <= 100);
+        result->spo2 = (int32_t)spo2;
+        result->spo2_valid = (spo2 >= 70.0f && spo2 <= 100.0f);
     } else {
         result->spo2_valid = false;
     }
