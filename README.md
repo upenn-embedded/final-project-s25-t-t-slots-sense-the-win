@@ -108,10 +108,13 @@ It will be on a table. We will have well-rested (calm heart rate) players play, 
 ## Sprint Review #1
 
 ### Last week's progress
+Just Started
 
 ### Current state of project
+Wrote code for displaying prompts. Implemented the basic game stages and state machine. Designed GUI for the game. Drew animations on screen. 
 
 ### Next week's plan
+Configure I2C connection of HR sensor. Figure out how to integrate the sensor with the button.
 
 ## Sprint Review #2
 
