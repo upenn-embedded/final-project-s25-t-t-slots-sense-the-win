@@ -1,327 +1,438 @@
-/*
- * File:   i2c.c
- * I2C/TWI implementation for ESE 3500
- * Adapted for ATmega328PB with XC8 compiler
- * 
- * Author: Based on header by James Steeman
- * Implementation for T&T Slots project
- */
-
-#define F_CPU 16000000UL
-
-#include <avr/io.h>
-#include <util/delay.h>
-#include "i2c.h"
-
-// Status code constants
-#define I2C_START_STATUS      0x08  // Start condition transmitted
-#define I2C_REP_START_STATUS  0x10  // Repeated start condition transmitted
-#define I2C_MT_SLA_ACK        0x18  // SLA+W transmitted, ACK received
-#define I2C_MT_SLA_NACK       0x20  // SLA+W transmitted, NACK received
-#define I2C_MT_DATA_ACK       0x28  // Data transmitted, ACK received
-#define I2C_MT_DATA_NACK      0x30  // Data transmitted, NACK received
-#define I2C_MR_SLA_ACK        0x40  // SLA+R transmitted, ACK received
-#define I2C_MR_SLA_NACK       0x48  // SLA+R transmitted, NACK received
-#define I2C_MR_DATA_ACK       0x50  // Data received, ACK returned
-#define I2C_MR_DATA_NACK      0x58  // Data received, NACK returned
-
-// TWI bit rate for 100kHz standard mode on 16MHz
-#define TWI_FREQ 100000L
-#define TWBR_VAL ((F_CPU / TWI_FREQ) - 16) / 2
-
 /**
- * @brief Error handling function
+ * @file i2c.c
+ * @brief I2C communication library implementation for ATMEGA328PB using XC8 compiler
+ * @details Used for MAXREFDES117# sensor communication
  */
-void ERROR() {
-    // In a real application, this would do proper error handling
-    // For now, just a placeholder for error detection
+#define F_CPU 16000000UL
+#include "i2c.h"
+#include <xc.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+// TWI status codes for XC8 compiler
+#define TW_START        0x08
+#define TW_REP_START    0x10
+#define TW_MT_SLA_ACK   0x18
+#define TW_MT_SLA_NACK  0x20
+#define TW_MT_DATA_ACK  0x28
+#define TW_MT_DATA_NACK 0x30
+#define TW_MR_SLA_ACK   0x40
+#define TW_MR_SLA_NACK  0x48
+#define TW_MR_DATA_ACK  0x50
+#define TW_MR_DATA_NACK 0x58
+
+// XC8 bit definitions for TWI
+#define TWINT  7
+#define TWSTA  5
+#define TWSTO  4
+#define TWEA   6
+#define TWEN   2
+#define TWPS0  0
+#define TWPS1  1
+
+// Private function prototypes
+static bool i2c_wait(uint16_t timeout_ms);
+static void delay_us(uint16_t us);
+static void delay_ms(uint16_t ms);
+
+// Simple delay functions
+static void delay_us(uint16_t us) {
+    // Simple software delay - adjust based on your clock frequency
+    for (uint16_t i = 0; i < us; i++) {
+        for (uint8_t j = 0; j < 4; j++) {
+            asm("nop");
+        }
+    }
+}
+
+static void delay_ms(uint16_t ms) {
+    for (uint16_t i = 0; i < ms; i++) {
+        delay_us(1000);
+    }
 }
 
 /**
- * @brief Initialize the TWI module
+ * @brief Initialize I2C communication
+ * @param frequency I2C bus frequency in Hz
  */
-void I2C_init() {
-    // Set bit rate register for standard 100kHz
-    TWBR0 = (uint8_t)TWBR_VAL;
+void i2c_init(uint32_t frequency) {
+    // Calculate TWI bit rate register value for the desired frequency
+    // SCL frequency = F_CPU / (16 + 2 * TWBR * 4^TWPS)
+    // Assuming TWPS (prescaler) = 0, which means 4^TWPS = 1
+    uint8_t twbr_value = ((F_CPU / frequency) - 16) / 2;
     
-    // Enable TWI module
+    // Set TWI bit rate register
+    TWBR0 = twbr_value;
+    
+    // Set prescaler to 0 in TWSR register
+    TWSR0 &= ~((1 << TWPS1) | (1 << TWPS0));
+    
+    // Enable TWI
     TWCR0 = (1 << TWEN);
 }
 
 /**
- * @brief Wait for TWI operation to complete
- * @return TWI status register value
+ * @brief Wait for I2C operations to complete with timeout
+ * @param timeout_ms timeout in milliseconds
+ * @return true if operation completed, false if timeout
  */
-static uint8_t I2C_wait() {
-    // Wait for TWINT flag to be set, indicating completion of TWI operation
-    while (!(TWCR0 & (1 << TWINT)));
+bool i2c_wait_for_complete(uint16_t timeout_ms) {
+    uint16_t timer = 0;
     
-    // Return TWI status register value (masked with status bits)
-    return (TWSR0 & 0xF8);
+    // Wait for TWINT flag to be set
+    while (!(TWCR0 & (1 << TWINT))) {
+        delay_us(100);
+        timer += 1;
+        if (timer >= timeout_ms * 10) {
+            return false; // Timeout
+        }
+    }
+    
+    return true;
 }
 
 /**
- * @brief Send a start condition
+ * @brief Private function to wait for TWI operation to complete
+ * @param timeout_ms timeout in milliseconds
+ * @return true if successful, false if timeout or error
  */
-void I2C_start() {
+static bool i2c_wait(uint16_t timeout_ms) {
+    if (!i2c_wait_for_complete(timeout_ms)) {
+        return false;
+    }
+    
+    // Check TWI status
+    uint8_t status = TWSR0 & 0xF8;
+    
+    // These are general success codes, specific functions will check for specific success codes
+    if (status == TW_START || status == TW_REP_START || 
+        status == TW_MT_SLA_ACK || status == TW_MT_DATA_ACK || 
+        status == TW_MR_SLA_ACK || status == TW_MR_DATA_ACK || 
+        status == TW_MR_DATA_NACK) {
+        return true;
+    }
+    
+    return false;
+}
+
+/**
+ * @brief Send start condition
+ * @return true if successful, false otherwise
+ */
+bool i2c_start(void) {
     // Send START condition
     TWCR0 = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
     
-    // Wait for START to be transmitted
-    if (I2C_wait() != I2C_START_STATUS) {
-        ERROR();
+    // Wait for operation to complete
+    if (!i2c_wait_for_complete(10)) {
+        return false;
     }
+    
+    // Check if START condition was transmitted
+    if ((TWSR0 & 0xF8) != TW_START) {
+        return false;
+    }
+    
+    return true;
 }
 
 /**
- * @brief Send a repeated start condition
+ * @brief Send repeated start condition
+ * @return true if successful, false otherwise
  */
-void I2C_repStart() {
+bool i2c_restart(void) {
     // Send repeated START condition
     TWCR0 = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
     
-    // Wait for repeated START to be transmitted
-    if (I2C_wait() != I2C_REP_START_STATUS) {
-        ERROR();
+    // Wait for operation to complete
+    if (!i2c_wait_for_complete(10)) {
+        return false;
     }
+    
+    // Check if repeated START condition was transmitted
+    if ((TWSR0 & 0xF8) != TW_REP_START) {
+        return false;
+    }
+    
+    return true;
 }
 
 /**
- * @brief Send a stop condition
+ * @brief Send stop condition
  */
-void I2C_stop() {
+void i2c_stop(void) {
     // Send STOP condition
-    TWCR0 = (1 << TWINT) | (1 << TWEN) | (1 << TWSTO);
+    TWCR0 = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
     
-    // Small delay to ensure the stop bit is fully processed
-    _delay_us(10);
-}
-
-/**
- * @brief Begin a write operation to the specified address
- * @param addr 7-bit device address
- */
-void I2C_writeBegin(uint8_t addr) {
-    // Send device address with write bit (0)
-    TWDR0 = (addr << 1) & 0xFE;
-    
-    // Clear TWINT flag to start transmission
-    TWCR0 = (1 << TWINT) | (1 << TWEN);
-    
-    // Wait for address to be transmitted and ACK/NACK to be received
-    uint8_t status = I2C_wait();
-    if (status != I2C_MT_SLA_ACK) {
-        ERROR();
+    // Wait until STOP condition is executed
+    uint16_t timeout = 1000; // 100ms timeout
+    while (TWCR0 & (1 << TWSTO)) {
+        delay_us(100);
+        if (--timeout == 0) {
+            break; // Timeout, exit anyway
+        }
     }
 }
 
 /**
- * @brief Begin a read operation from the specified address
- * @param addr 7-bit device address
+ * @brief Send address + R/W bit
+ * @param address 7-bit device address
+ * @param read true for read, false for write
+ * @return true if ACK received, false if NACK
  */
-void I2C_readBegin(uint8_t addr) {
-    // Send device address with read bit (1)
-    TWDR0 = (addr << 1) | 0x01;
+bool i2c_address(uint8_t address, bool read) {
+    // Prepare address with R/W bit
+    uint8_t twdr_value = (address << 1) | (read ? 1 : 0);
     
-    // Clear TWINT flag to start transmission
+    // Load address into TWDR
+    TWDR0 = twdr_value;
+    
+    // Start transmission
     TWCR0 = (1 << TWINT) | (1 << TWEN);
     
-    // Wait for address to be transmitted and ACK/NACK to be received
-    uint8_t status = I2C_wait();
-    if (status != I2C_MR_SLA_ACK) {
-        ERROR();
+    // Wait for operation to complete
+    if (!i2c_wait_for_complete(10)) {
+        return false;
+    }
+    
+    // Check if SLA+R/W was transmitted and ACK received
+    uint8_t status = TWSR0 & 0xF8;
+    if (read) {
+        return (status == TW_MR_SLA_ACK);
+    } else {
+        return (status == TW_MT_SLA_ACK);
     }
 }
 
 /**
- * @brief Write a byte to the bus and check for ACK
- * @param data Byte to write
- * @return 1 if ACK received, 0 if NACK received
+ * @brief Write byte to I2C bus
+ * @param data byte to send
+ * @return true if ACK received, false if NACK
  */
-static uint8_t I2C_write(uint8_t data) {
-    // Load data into TWDR register
+bool i2c_write(uint8_t data) {
+    // Load data into TWDR
     TWDR0 = data;
     
-    // Clear TWINT flag to start transmission
+    // Start transmission
     TWCR0 = (1 << TWINT) | (1 << TWEN);
     
-    // Wait for data to be transmitted and ACK/NACK to be received
-    uint8_t status = I2C_wait();
+    // Wait for operation to complete
+    if (!i2c_wait_for_complete(10)) {
+        return false;
+    }
     
-    // Return 1 if ACK received, 0 if NACK received
-    return (status == I2C_MT_DATA_ACK);
+    // Check if data was transmitted and ACK received
+    return ((TWSR0 & 0xF8) == TW_MT_DATA_ACK);
 }
 
 /**
- * @brief Read a byte from the bus and send ACK/NACK
- * @param ack 1 to send ACK, 0 to send NACK
- * @return Byte read from the bus
+ * @brief Read byte from I2C bus
+ * @param ack true to send ACK, false to send NACK
+ * @return byte read from I2C bus
  */
-static uint8_t I2C_read(uint8_t ack) {
-    // Start read operation with or without ACK
+uint8_t i2c_read(bool ack) {
+    // Start reception with ACK/NACK
     if (ack) {
-        // Read with ACK (expecting more data)
         TWCR0 = (1 << TWINT) | (1 << TWEN) | (1 << TWEA);
     } else {
-        // Read with NACK (last byte to read)
         TWCR0 = (1 << TWINT) | (1 << TWEN);
     }
     
-    // Wait for data to be received
-    I2C_wait();
+    // Wait for operation to complete
+    if (!i2c_wait_for_complete(10)) {
+        return 0xFF; // Return 0xFF on error
+    }
+    
+    // Check if data was received and ACK/NACK sent
+    uint8_t status = TWSR0 & 0xF8;
+    if (ack && status != TW_MR_DATA_ACK) {
+        return 0xFF; // Return 0xFF on error
+    }
+    if (!ack && status != TW_MR_DATA_NACK) {
+        return 0xFF; // Return 0xFF on error
+    }
     
     // Return received data
     return TWDR0;
 }
 
 /**
- * @brief Write data to a specific register on a device
- * @param addr 7-bit device address
- * @param data Data to write
- * @param reg Register address
+ * @brief Write multiple bytes to device
+ * @param address 7-bit device address
+ * @param data pointer to data buffer
+ * @param len number of bytes to write
+ * @return true if successful, false otherwise
  */
-void I2C_writeRegister(uint8_t addr, uint8_t data, uint8_t reg) {
-    // Send start condition
-    I2C_start();
-    
-    // Send device address with write bit
-    I2C_writeBegin(addr);
-    
-    // Send register address
-    if (!I2C_write(reg)) {
-        ERROR();
+bool i2c_write_buffer(uint8_t address, uint8_t *data, uint8_t len) {
+    if (!i2c_start()) {
+        return false;
     }
     
-    // Send data
-    if (!I2C_write(data)) {
-        ERROR();
+    if (!i2c_address(address, false)) {
+        i2c_stop();
+        return false;
     }
     
-    // Send stop condition
-    I2C_stop();
-}
-
-/**
- * @brief Read data from a specific register on a device
- * @param addr 7-bit device address
- * @param data_addr Pointer where read data will be stored
- * @param reg Register address
- */
-void I2C_readRegister(uint8_t addr, uint8_t* data_addr, uint8_t reg) {
-    // Send start condition
-    I2C_start();
-    
-    // Send device address with write bit
-    I2C_writeBegin(addr);
-    
-    // Send register address
-    if (!I2C_write(reg)) {
-        ERROR();
-    }
-    
-    // Send repeated start
-    I2C_repStart();
-    
-    // Send device address with read bit
-    I2C_readBegin(addr);
-    
-    // Read data with NACK (only one byte)
-    *data_addr = I2C_read(0);
-    
-    // Send stop condition
-    I2C_stop();
-}
-
-/**
- * @brief Write a stream of data bytes
- * @param data Pointer to data array
- * @param len Number of bytes to write
- */
-void I2C_writeStream(uint8_t* data, int len) {
-    // Write each byte
-    for (int i = 0; i < len; i++) {
-        if (!I2C_write(data[i])) {
-            ERROR();
-            return;
+    for (uint8_t i = 0; i < len; i++) {
+        if (!i2c_write(data[i])) {
+            i2c_stop();
+            return false;
         }
     }
+    
+    i2c_stop();
+    return true;
 }
 
 /**
- * @brief Read a stream of data bytes
- * @param data_addr Pointer where read data will be stored
- * @param len Number of bytes to read
+ * @brief Read multiple bytes from device
+ * @param address 7-bit device address
+ * @param data pointer to data buffer
+ * @param len number of bytes to read
+ * @return true if successful, false otherwise
  */
-void I2C_readStream(uint8_t* data_addr, int len) {
-    // Read each byte
-    for (int i = 0; i < len; i++) {
+bool i2c_read_buffer(uint8_t address, uint8_t *data, uint8_t len) {
+    if (!i2c_start()) {
+        return false;
+    }
+    
+    if (!i2c_address(address, true)) {
+        i2c_stop();
+        return false;
+    }
+    
+    for (uint8_t i = 0; i < len; i++) {
         // Send ACK for all bytes except the last one
-        data_addr[i] = I2C_read(i < len - 1);
+        data[i] = i2c_read(i < (len - 1));
     }
+    
+    i2c_stop();
+    return true;
 }
 
 /**
- * @brief Write data to multiple consecutive registers
- * @param dataArrPtr Pointer to data array
- * @param addrArrPtr Pointer to register address array
- * @param len Number of registers to write
- * @param addr 7-bit device address
+ * @brief Write to device register
+ * @param dev_addr 7-bit device address
+ * @param reg_addr register address
+ * @param data byte to write
+ * @return true if successful, false otherwise
  */
-void I2C_writeCompleteStream(uint8_t *dataArrPtr, uint8_t *addrArrPtr, int len, uint8_t addr) {
-    // Send start condition
-    I2C_start();
-    
-    // Send device address with write bit
-    I2C_writeBegin(addr);
-    
-    // Write to each register
-    for (int i = 0; i < len; i++) {
-        // Send register address
-        if (!I2C_write(addrArrPtr[i])) {
-            ERROR();
-            break;
-        }
-        
-        // Send data
-        if (!I2C_write(dataArrPtr[i])) {
-            ERROR();
-            break;
-        }
+bool i2c_write_register(uint8_t dev_addr, uint8_t reg_addr, uint8_t data) {
+    if (!i2c_start()) {
+        return false;
     }
     
-    // Send stop condition
-    I2C_stop();
+    if (!i2c_address(dev_addr, false)) {
+        i2c_stop();
+        return false;
+    }
+    
+    if (!i2c_write(reg_addr)) {
+        i2c_stop();
+        return false;
+    }
+    
+    if (!i2c_write(data)) {
+        i2c_stop();
+        return false;
+    }
+    
+    i2c_stop();
+    return true;
 }
 
 /**
- * @brief Read data from multiple consecutive registers
- * @param dataArrPtr Pointer where read data will be stored
- * @param addr 7-bit device address
- * @param reg Starting register address
- * @param len Number of registers to read
+ * @brief Read from device register
+ * @param dev_addr 7-bit device address
+ * @param reg_addr register address
+ * @param data pointer to store read byte
+ * @return true if successful, false otherwise
  */
-void I2C_readCompleteStream(uint8_t* dataArrPtr, uint8_t addr, uint8_t reg, int len) {
-    // Send start condition
-    I2C_start();
-    
-    // Send device address with write bit
-    I2C_writeBegin(addr);
-    
-    // Send register address
-    if (!I2C_write(reg)) {
-        ERROR();
-        return;
+bool i2c_read_register(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data) {
+    if (!i2c_start()) {
+        return false;
     }
     
-    // Send repeated start
-    I2C_repStart();
+    if (!i2c_address(dev_addr, false)) {
+        i2c_stop();
+        return false;
+    }
     
-    // Send device address with read bit
-    I2C_readBegin(addr);
+    if (!i2c_write(reg_addr)) {
+        i2c_stop();
+        return false;
+    }
     
-    // Read data
-    I2C_readStream(dataArrPtr, len);
+    if (!i2c_restart()) {
+        i2c_stop();
+        return false;
+    }
     
-    // Send stop condition
-    I2C_stop();
+    if (!i2c_address(dev_addr, true)) {
+        i2c_stop();
+        return false;
+    }
+    
+    *data = i2c_read(false); // Read with NACK
+    
+    i2c_stop();
+    return true;
+}
+
+/**
+ * @brief Read multiple bytes from device register
+ * @param dev_addr 7-bit device address
+ * @param reg_addr register address
+ * @param data pointer to data buffer
+ * @param len number of bytes to read
+ * @return true if successful, false otherwise
+ */
+bool i2c_read_registers(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint8_t len) {
+    if (!i2c_start()) {
+        return false;
+    }
+    
+    if (!i2c_address(dev_addr, false)) {
+        i2c_stop();
+        return false;
+    }
+    
+    if (!i2c_write(reg_addr)) {
+        i2c_stop();
+        return false;
+    }
+    
+    if (!i2c_restart()) {
+        i2c_stop();
+        return false;
+    }
+    
+    if (!i2c_address(dev_addr, true)) {
+        i2c_stop();
+        return false;
+    }
+    
+    for (uint8_t i = 0; i < len; i++) {
+        // Send ACK for all bytes except the last one
+        data[i] = i2c_read(i < (len - 1));
+    }
+    
+    i2c_stop();
+    return true;
+}
+
+/**
+ * @brief Check if device is present on I2C bus
+ * @param address 7-bit device address
+ * @return true if device responds, false otherwise
+ */
+bool i2c_is_device_ready(uint8_t address) {
+    bool result = false;
+    
+    if (i2c_start()) {
+        result = i2c_address(address, false);
+    }
+    
+    i2c_stop();
+    return result;
 }

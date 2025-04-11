@@ -76,28 +76,6 @@ void initialize(void) {
     _delay_ms(500); // Give time for sensor to stabilize
     MAX30102_init();
     
-    // Force a new sample to generate an interrupt
-printf("Triggering a new sample...\r\n");
-// First read current mode
-uint8_t currentMode;
-I2C_readRegister(MAX30102_I2C_ADDR, &currentMode, MAX30102_MODE_CONFIG);
-// Restart the mode to trigger new samples
-I2C_writeRegister(MAX30102_I2C_ADDR, currentMode, MAX30102_MODE_CONFIG);
-
-// Wait a moment for samples to be generated
-_delay_ms(500);
-
-// Read interrupt status directly to see if any interrupt occurred
-uint8_t intStatus;
-I2C_readRegister(MAX30102_I2C_ADDR, &intStatus, MAX30102_INT_STATUS_1);
-printf("Interrupt Status after sample: 0x%02X\r\n", intStatus);
-
-// Check if DATA_RDY or A_FULL flags are set
-if (intStatus & (MAX30102_INT_DATA_RDY | MAX30102_INT_A_FULL)) {
-    printf("Interrupt flags set, but ISR not triggered.\r\n");
-} else {
-    printf("No interrupt flags set. Sensor may not be sampling.\r\n");
-}
     
     // Initialize the screen
     LCD_setScreen(BLACK);
@@ -156,8 +134,6 @@ void setupHeartRateSensorInterrupt(void) {
     
     // Enable INT1 interrupt
     EIMSK |= (1 << INT1);
-    
-    printf("INT1 configured for RISING edge trigger\r\n");
 }
 
 // Display welcome screen
@@ -242,6 +218,7 @@ void displayPressButtonPrompt(void) {
 // Display measuring heart rate prompt
 void displayMeasuringPrompt(void) {
     static uint8_t lastHeartRateDisplayed = 0;
+    printf("measuring1\n");
     
     // First, clear screen and setup initial display
     if (animationFrame == 0) {
@@ -260,14 +237,20 @@ void displayMeasuringPrompt(void) {
         lastHeartRateDisplayed = 0;
     }
     
+    printf("measuring2\n");
+    
     // Process HR data if available
-    if (heartRateDataReady) {
-        processHeartRateSample();
-        heartRateDataReady = 0;
-    }
+//    if (heartRateDataReady) {
+//        processHeartRateSample();
+//        heartRateDataReady = 0;
+//    }
+    
+    processHeartRateSample();
     
     // Update timer (elapsed time)
     updateTimer();
+    
+    printf("measuring3\n");
     
     // Draw progress animation
     switch(animationFrame % 4) {
@@ -322,6 +305,8 @@ void displayMeasuringPrompt(void) {
     
     // Update animation frame
     animationFrame++;
+    
+    printf("measuring4\n");
     
     // Timing for animation
     _delay_ms(250);
@@ -401,7 +386,7 @@ void processHeartRateSample(void) {
     uint16_t currentHR = MAX30102_getHeartRate();
     
     // Only update if we have a valid reading (> 0)
-    if (currentHR > 0) {
+    if (currentHR >= 0) {
         // Track min and max heart rate
         if (currentHR > maxHeartRate) maxHeartRate = currentHR;
         if (currentHR < minHeartRate) minHeartRate = currentHR;
@@ -482,6 +467,7 @@ ISR(INT0_vect) {
     
     // Button was pressed
     printf("button pressed, buttonPressed = %d\n", buttonPressed);
+    currentState = STATE_MEASURING;
 }
 
 // Heart rate sensor interrupt handler (INT1 - PD3)
@@ -502,7 +488,6 @@ ISR(INT1_vect) {
     // For debugging
     printf("INT1 ISR triggered!\r\n");
     printf("Status1: 0x%02X, Status2: 0x%02X\r\n", intStatus1, intStatus2);
-    printf("INT1 pin state: %d\r\n", (PIND & (1 << PIND3)) ? 1 : 0);
     
     // Set flag for main loop to process
     heartRateDataReady = 1;
@@ -546,6 +531,7 @@ int main(void) {
             case STATE_MEASURING:
                 displayMeasuringPrompt();
                 
+                printf("measuring\n");
                 // Check if button was released
                 if (PIND & (1 << PIND2)) {
                     printf("Button released, HR=%u BPM\r\n", lastHeartRate);

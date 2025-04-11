@@ -1,49 +1,121 @@
-/* 
- * File:   i2c.h
- *  simple i2c driver adapted for ESE 3500 WS3: Serial
- *  Note: this is an adaption of code I wrote previously and updated quickly
- *          to meet the needs of this assignment. If you are looking at this for
- *          your final project, note your project needs and particular i2c.c 
- *          implementation will drive what functions you need, trying to 
- *          recreate these functions may be insuffient, unecessary, or incorrect
- * 
- * Author: James Steeman
- * 
- * Created on November 17, 2024
- * Updated Feb 2025
+/**
+ * @file i2c.h
+ * @brief I2C communication library for ATMEGA328PB
+ * @details Used for MAXREFDES117# sensor communication
  */
-
-#include <stdint.h>
 
 #ifndef I2C_H
 #define I2C_H
 
-/* Function Declarations */
+#include <xc.h>
+#include <stdint.h>
+#include <stdbool.h>
 
-void I2C_start();
+/**
+ * @brief Initialize I2C communication
+ * @param frequency I2C bus frequency in Hz
+ * @return none
+ */
+void i2c_init(uint32_t frequency);
 
-void I2C_repStart();
+/**
+ * @brief Send start condition
+ * @return true if successful, false otherwise
+ */
+bool i2c_start(void);
 
-void I2C_stop();
+/**
+ * @brief Send repeated start condition
+ * @return true if successful, false otherwise
+ */
+bool i2c_restart(void);
 
-void I2C_writeBegin(uint8_t addr);
+/**
+ * @brief Send stop condition
+ * @return none
+ */
+void i2c_stop(void);
 
-void I2C_readBegin(uint8_t addr);
+/**
+ * @brief Send address + R/W bit
+ * @param address 7-bit device address
+ * @param read true for read, false for write
+ * @return true if ACK received, false if NACK
+ */
+bool i2c_address(uint8_t address, bool read);
 
-void I2C_writeRegister(uint8_t addr, uint8_t data, uint8_t reg);
+/**
+ * @brief Write byte to I2C bus
+ * @param data byte to send
+ * @return true if ACK received, false if NACK
+ */
+bool i2c_write(uint8_t data);
 
-void I2C_readRegister(uint8_t addr, uint8_t* data_addr, uint8_t reg);
+/**
+ * @brief Read byte from I2C bus
+ * @param ack true to send ACK, false to send NACK
+ * @return byte read from I2C bus
+ */
+uint8_t i2c_read(bool ack);
 
-void I2C_writeStream(uint8_t* data, int len);
+/**
+ * @brief Write multiple bytes to device
+ * @param address 7-bit device address
+ * @param data pointer to data buffer
+ * @param len number of bytes to write
+ * @return true if successful, false otherwise
+ */
+bool i2c_write_buffer(uint8_t address, uint8_t *data, uint8_t len);
 
-void I2C_readStream(uint8_t* data_addr, int len);
+/**
+ * @brief Read multiple bytes from device
+ * @param address 7-bit device address
+ * @param data pointer to data buffer
+ * @param len number of bytes to read
+ * @return true if successful, false otherwise
+ */
+bool i2c_read_buffer(uint8_t address, uint8_t *data, uint8_t len);
 
-void I2C_init();
+/**
+ * @brief Write to device register
+ * @param dev_addr 7-bit device address
+ * @param reg_addr register address
+ * @param data byte to write
+ * @return true if successful, false otherwise
+ */
+bool i2c_write_register(uint8_t dev_addr, uint8_t reg_addr, uint8_t data);
 
-void ERROR();
+/**
+ * @brief Read from device register
+ * @param dev_addr 7-bit device address
+ * @param reg_addr register address
+ * @param data pointer to store read byte
+ * @return true if successful, false otherwise
+ */
+bool i2c_read_register(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data);
 
-void I2C_writeCompleteStream(uint8_t *dataArrPtr, uint8_t *addrArrPtr, int len, uint8_t addr);
+/**
+ * @brief Read multiple bytes from device register
+ * @param dev_addr 7-bit device address
+ * @param reg_addr register address
+ * @param data pointer to data buffer
+ * @param len number of bytes to read
+ * @return true if successful, false otherwise
+ */
+bool i2c_read_registers(uint8_t dev_addr, uint8_t reg_addr, uint8_t *data, uint8_t len);
 
-void I2C_readCompleteStream(uint8_t* dataArrPtr, uint8_t addr, uint8_t reg, int len);
+/**
+ * @brief Check if device is present on I2C bus
+ * @param address 7-bit device address
+ * @return true if device responds, false otherwise
+ */
+bool i2c_is_device_ready(uint8_t address);
 
-#endif
+/**
+ * @brief Wait for I2C operations to complete with timeout
+ * @param timeout_ms timeout in milliseconds
+ * @return true if operation completed, false if timeout
+ */
+bool i2c_wait_for_complete(uint16_t timeout_ms);
+
+#endif /* I2C_H */
