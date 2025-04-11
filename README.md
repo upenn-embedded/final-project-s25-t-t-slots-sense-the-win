@@ -112,6 +112,8 @@ Just Started
 
 ### Current state of project
 Wrote code for displaying prompts. Implemented the basic game stages and state machine. Designed GUI for the game. Drew animations on screen. 
+![1744392061079](image/README/1744392061079.png)
+![1744392155760](image/README/1744392155760.png)
 
 ### Next week's plan
 Configure I2C connection of HR sensor. Figure out how to integrate the sensor with the button.
