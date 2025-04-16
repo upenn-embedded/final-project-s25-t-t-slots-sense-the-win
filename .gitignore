@@ -24,4 +24,8 @@
 /ttslots.X/build/
 /ttslots.X/.generated_files
 
+/hrtest.X/dist/
+/hrtest.X/build/
+/hrtest.X/.generated_files
+
 *.DS_Store

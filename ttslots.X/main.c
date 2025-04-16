@@ -12,6 +12,18 @@
 // Custom RNG variables
 static uint16_t rand_seed = 1;
 
+// Define I2C frequency
+#define I2C_FREQUENCY      400000UL  // 400kHz for MAX30102 communication
+
+// Define the number of samples to read in each iteration
+#define SAMPLE_COUNT       25
+
+// Global variable for interrupt data
+volatile bool new_data_ready = false;
+
+// Sample buffer
+max30102_fifo_sample_t samples[SAMPLE_COUNT];
+
 // Define states for the slot machine
 typedef enum {
     STATE_WELCOME,
@@ -50,6 +62,49 @@ void updateTimer(void);
 uint16_t custom_rand(void);
 uint16_t custom_rand_range(uint16_t max);
 
+bool init_peripherals(void) {
+    // Initialize I2C at 400kHz
+    i2c_init(I2C_FREQUENCY);
+    printf("I2C initialized\r\n");
+    
+    // Initialize MAX30102
+    if (!max30102_init()) {
+        printf("Failed to initialize MAX30102 sensor\r\n");
+        return false;
+    }
+    printf("MAX30102 sensor initialized\r\n");
+    
+    // Configure MAX30102 with default settings
+    max30102_led_amplitude_t led_amplitude = {
+        .red = 0x1F,  // ~6.4mA
+        .ir = 0x1F    // ~6.4mA
+    };
+    
+    if (!max30102_configure(MAX30102_SAMPLE_RATE_100_HZ, 
+                           MAX30102_PULSE_WIDTH_411_US,
+                           MAX30102_ADC_RANGE_16384_NA,
+                           led_amplitude)) {
+        printf("Failed to configure MAX30102 sensor\r\n");
+        return false;
+    }
+    
+    // Set up external interrupt (INT1 on PD3)
+    // Configure PD3 as input with pull-up
+    DDRD &= ~(1 << PD3);      // Set PD3 as input
+    PORTD |= (1 << PD3);      // Enable pull-up
+    
+    // Set up INT1 for falling edge detection
+    EICRA &= ~(1 << ISC10);   // Clear ISC10
+    EICRA |= (1 << ISC11);    // Set ISC11 for falling edge
+    EIMSK |= (1 << INT1);     // Enable INT1
+    
+    // Clear any pending interrupts
+    uint8_t int_status_1, int_status_2;
+    max30102_read_interrupt_status(&int_status_1, &int_status_2);
+    
+    return true;
+}
+
 // Initialize hardware
 void initialize(void) {
     // Initialize LCD
@@ -62,21 +117,16 @@ void initialize(void) {
     
     // Initialize UART for debugging
     uart_init();
-    
-    // Initialize I2C
-    I2C_init();
+    if (!init_peripherals()) {
+        while (1) {
+            // Halt on error
+            _delay_ms(1000);
+        }
+    }
     
     // Setup button interrupt
     setupButtonInterrupt();
-    
-    // Setup heart rate sensor interrupt
-    setupHeartRateSensorInterrupt();
-    
-    // Initialize the heart rate sensor
-    _delay_ms(500); // Give time for sensor to stabilize
-    MAX30102_init();
-    
-    
+
     // Initialize the screen
     LCD_setScreen(BLACK);
     
@@ -105,8 +155,6 @@ void initialize(void) {
     // Print debug info
     printf("T&T Slots - Sense the Win\r\n");
     printf("System Initialized\r\n");
-    printf("MAX30102 Part ID: 0x%02X\r\n", MAX30102_readPartID());
-    printf("MAX30102 Rev ID: 0x%02X\r\n", MAX30102_getRevisionID());
     
 }
 
@@ -118,22 +166,6 @@ void setupButtonInterrupt(void) {
     
     // Enable INT0 interrupt
     EIMSK |= (1 << INT0);
-}
-
-// Setup heart rate sensor interrupt on PD3 (INT1)
-void setupHeartRateSensorInterrupt(void) {
-    // Set PD3 as input
-    DDRD &= ~(1 << DDD3);
-    
-    // Enable pull-up resistor on PD3
-    PORTD |= (1 << PORTD3);
-    
-    // Configure INT1 to trigger on RISING edge since the pin is LOW when idle
-    // ISC11 = 1, ISC10 = 1 for rising edge
-    EICRA |= (1 << ISC11) | (1 << ISC10);
-    
-    // Enable INT1 interrupt
-    EIMSK |= (1 << INT1);
 }
 
 // Display welcome screen
@@ -380,25 +412,6 @@ void displayResultScreen(uint8_t win) {
     currentState = STATE_WELCOME;
 }
 
-// Process heart rate sample
-void processHeartRateSample(void) {
-    // Get heart rate from the sensor
-    uint16_t currentHR = MAX30102_getHeartRate();
-    
-    // Only update if we have a valid reading (> 0)
-    if (currentHR >= 0) {
-        // Track min and max heart rate
-        if (currentHR > maxHeartRate) maxHeartRate = currentHR;
-        if (currentHR < minHeartRate) minHeartRate = currentHR;
-        
-        // Update our heart rate value
-        heartRate = currentHR;
-        measurementSamples++;
-        
-        // Debug output
-        printf("HR: %u BPM\r\n", heartRate);
-    }
-}
 
 // Determine win odds based on heart rate
 uint8_t determineWinOdds(uint16_t heartRate) {
@@ -472,25 +485,7 @@ ISR(INT0_vect) {
 
 // Heart rate sensor interrupt handler (INT1 - PD3)
 ISR(INT1_vect) {
-    // Read the interrupt status register to see what triggered the interrupt
-    uint8_t intStatus1, intStatus2;
-    
-    // Disable interrupts during I2C communication to prevent nested interrupts
-    cli();
-    
-    // Read interrupt status registers
-    I2C_readRegister(MAX30102_I2C_ADDR, &intStatus1, MAX30102_INT_STATUS_1);
-    I2C_readRegister(MAX30102_I2C_ADDR, &intStatus2, MAX30102_INT_STATUS_2);
-    
-    // Re-enable interrupts
-    sei();
-    
-    // For debugging
-    printf("INT1 ISR triggered!\r\n");
-    printf("Status1: 0x%02X, Status2: 0x%02X\r\n", intStatus1, intStatus2);
-    
-    // Set flag for main loop to process
-    heartRateDataReady = 1;
+    new_data_ready = true;
     
     // Update RNG seed on each interrupt for more randomness
     rand_seed ^= (uint16_t)TCNT0;
@@ -510,6 +505,12 @@ uint16_t custom_rand_range(uint16_t max) {
 }
 
 int main(void) {
+    max30102_result_t result;
+    uint8_t sample_count;
+    uint8_t write_ptr, read_ptr, overflow;
+    uint8_t int_status_1, int_status_2;
+    uint32_t loop_count = 0;
+    
     // Initialize hardware
     initialize();
     
@@ -518,61 +519,141 @@ int main(void) {
     
     // Main loop
     while (1) {
-        // State machine
-        switch (currentState) {
-            case STATE_WELCOME:
-                displayWelcomeScreen();
-                break;
-                
-            case STATE_PRESS_BUTTON:
-                displayPressButtonPrompt();
-                break;
-                
-            case STATE_MEASURING:
-                displayMeasuringPrompt();
-                
-                printf("measuring\n");
-                // Check if button was released
-                if (PIND & (1 << PIND2)) {
-                    printf("Button released, HR=%u BPM\r\n", lastHeartRate);
-                    
-                    // Button released, determine odds and start spinning
-                    currentState = STATE_SPINNING;
-                    animationFrame = 0;
-                }
-                break;
-                
-            case STATE_SPINNING:
-                displaySpinningPrompt();
-                
-                // Simulate spinning for 3 seconds, then show result
-                static uint8_t spinCount = 0;
-                spinCount++;
-                
-                if (spinCount > 15) {  // ~3 seconds (15 * 200ms)
-                    spinCount = 0;
-                    
-                    // Determine win based on heart rate
-                    uint8_t winPercentage = determineWinOdds(lastHeartRate);
-                    uint8_t randomValue = custom_rand_range(100);
-                    uint8_t win = (randomValue < winPercentage);
-                    
-                    // Show result
-                    currentState = STATE_RESULT;
-                    displayResultScreen(win);
-                }
-                break;
-                
-            case STATE_RESULT:
-                // This state is handled by displayResultScreen
-                // which automatically transitions back to welcome
-                break;
-                
-            default:
-                // In case of unknown state, reset to welcome
-                currentState = STATE_WELCOME;
-                break;
+        loop_count++;
+        if (new_data_ready) {
+            // printf("INT triggered!\r\n");
+            new_data_ready = false;
         }
+
+        // Check for interrupts via register polling every 20 iterations
+        if (loop_count % 20 == 0) {
+            // Read interrupt status
+            if (max30102_read_interrupt_status(&int_status_1, &int_status_2)) {
+                if (int_status_1 & MAX30102_INT_A_FULL) {
+                    // printf("INT detected via polling: 0x%02X\r\n", int_status_1);
+                    
+                    // Read FIFO pointers to determine how many samples to read
+                    if (max30102_read_fifo_ptrs(&write_ptr, &read_ptr, &overflow)) {
+                        // Calculate number of samples to read
+                        if (write_ptr >= read_ptr) {
+                            sample_count = write_ptr - read_ptr;
+                        } else {
+                            sample_count = 32 - read_ptr + write_ptr;  // FIFO is 32 samples deep
+                        }
+                        
+                        // Print FIFO status
+                        // printf("FIFO: W=%u R=%u OVF=%u Count=%u\r\n", write_ptr, read_ptr, overflow, sample_count);
+                        
+                        // Cap sample count to buffer size
+                        if (sample_count > SAMPLE_COUNT) {
+                            sample_count = SAMPLE_COUNT;
+                        }
+                        
+                        // Only process data if we have enough samples
+                        if (sample_count >= 5) {
+                            // Read samples from FIFO
+                            sample_count = max30102_read_fifo_samples(samples, sample_count);
+                            
+                            // Process samples to calculate heart rate and SpO2
+                            if (max30102_calculate_hr_spo2(samples, sample_count, &result)) {
+                                // Print sample data and results
+                                for (uint8_t i = 0; i < sample_count && i < 1; i++) {
+                                    printf("%lu\t%lu\t", samples[i].red, samples[i].ir);
+                                }
+                                
+                                // Print heart rate and validity
+                                if (result.hr_valid) {
+                                    printf("%ld\tValid\t\t", result.heart_rate);
+                                } else {
+                                    printf("--\tInvalid\t\t");
+                                }
+                                
+                                // Print SpO2 and validity
+                                if (result.spo2_valid) {
+                                    printf("%ld%%\tValid\r\n", result.spo2);
+                                } else {
+                                    printf("--%%\tInvalid\r\n");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Check interrupt pin state manually every 50 iterations
+        if (loop_count % 50 == 0) {
+            // Read PD3 pin state
+            if (!(PIND & (1 << PD3))) {
+                // printf("INT pin is LOW\r\n");
+            }
+        }
+        
+        // Every 100 loops, reconfigure interrupts to ensure they're enabled
+        if (loop_count % 100 == 0) {
+            // Re-enable FIFO almost full interrupt
+            max30102_set_interrupt_enables(MAX30102_INT_A_FULL, 0x00);
+            // printf("Reconfigured interrupts\r\n");
+        }
+        
+        // Small delay to allow sensor to collect data
+        _delay_ms(10);
+        
+//        // State machine
+//        switch (currentState) {
+//            case STATE_WELCOME:
+//                displayWelcomeScreen();
+//                break;
+//                
+//            case STATE_PRESS_BUTTON:
+//                displayPressButtonPrompt();
+//                break;
+//                
+//            case STATE_MEASURING:
+//                displayMeasuringPrompt();
+//                
+//                printf("measuring\n");
+//                // Check if button was released
+//                if (PIND & (1 << PIND2)) {
+//                    printf("Button released, HR=%u BPM\r\n", lastHeartRate);
+//                    
+//                    // Button released, determine odds and start spinning
+//                    currentState = STATE_SPINNING;
+//                    animationFrame = 0;
+//                }
+//                break;
+//                
+//            case STATE_SPINNING:
+//                displaySpinningPrompt();
+//                
+//                // Simulate spinning for 3 seconds, then show result
+//                static uint8_t spinCount = 0;
+//                spinCount++;
+//                
+//                if (spinCount > 15) {  // ~3 seconds (15 * 200ms)
+//                    spinCount = 0;
+//                    
+//                    // Determine win based on heart rate
+//                    uint8_t winPercentage = determineWinOdds(lastHeartRate);
+//                    uint8_t randomValue = custom_rand_range(100);
+//                    uint8_t win = (randomValue < winPercentage);
+//                    
+//                    // Show result
+//                    currentState = STATE_RESULT;
+//                    displayResultScreen(win);
+//                }
+//                break;
+//                
+//            case STATE_RESULT:
+//                // This state is handled by displayResultScreen
+//                // which automatically transitions back to welcome
+//                break;
+//                
+//            default:
+//                // In case of unknown state, reset to welcome
+//                currentState = STATE_WELCOME;
+//                break;
+//        }
     }
     
     return 0;
