@@ -18,9 +18,6 @@ static uint16_t rand_seed = 1;
 // Define the number of samples to read in each iteration
 #define SAMPLE_COUNT       25
 
-// Global variable for interrupt data
-volatile bool new_data_ready = false;
-
 // Sample buffer
 max30102_fifo_sample_t samples[SAMPLE_COUNT];
 
@@ -36,16 +33,13 @@ typedef enum {
 // Global variables
 SlotMachineState currentState = STATE_WELCOME;
 volatile uint8_t buttonPressed = 0;
-volatile uint8_t heartRateDataReady = 0;
-uint16_t heartRate = 0;
 uint8_t animationFrame = 0;
-uint8_t measurementActive = 0;
-uint32_t startTime = 0;
-uint32_t elapsedTimeMs = 0;
-uint16_t lastHeartRate = 75; // Default heart rate value
-uint16_t maxHeartRate = 0;
-uint16_t minHeartRate = 255;
-uint8_t measurementSamples = 0;
+max30102_result_t result;
+volatile uint32_t heartRate;
+volatile bool heartRateReady = false;
+uint8_t sample_count;
+uint8_t write_ptr, read_ptr, overflow;
+uint8_t int_status_1, int_status_2;
 
 // Function prototypes
 void initialize(void);
@@ -55,10 +49,7 @@ void displayMeasuringPrompt(void);
 void displaySpinningPrompt(void);
 void displayResultScreen(uint8_t win);
 void setupButtonInterrupt(void);
-void setupHeartRateSensorInterrupt(void);
-void processHeartRateSample(void);
-uint8_t determineWinOdds(uint16_t heartRate);
-void updateTimer(void);
+uint8_t determineWinOdds(uint32_t heartRate);
 uint16_t custom_rand(void);
 uint16_t custom_rand_range(uint16_t max);
 
@@ -250,39 +241,16 @@ void displayPressButtonPrompt(void) {
 // Display measuring heart rate prompt
 void displayMeasuringPrompt(void) {
     static uint8_t lastHeartRateDisplayed = 0;
-    printf("measuring1\n");
+//    printf("measuring1\n");
     
     // First, clear screen and setup initial display
     if (animationFrame == 0) {
         LCD_setScreen(BLACK);
         LCD_drawString(5, 15, "MEASURING PULSE...", CYAN, BLACK);
         LCD_drawString(10, 70, "Keep holding button", WHITE, BLACK);
-        
-        // Initialize measurement variables
-        measurementActive = 1;
-        startTime = 0;
-        elapsedTimeMs = 0;
-        measurementSamples = 0;
-        maxHeartRate = 0;
-        minHeartRate = 255;
-        
-        lastHeartRateDisplayed = 0;
     }
     
-    printf("measuring2\n");
-    
-    // Process HR data if available
-//    if (heartRateDataReady) {
-//        processHeartRateSample();
-//        heartRateDataReady = 0;
-//    }
-    
-    processHeartRateSample();
-    
-    // Update timer (elapsed time)
-    updateTimer();
-    
-    printf("measuring3\n");
+//    printf("measuring3\n");
     
     // Draw progress animation
     switch(animationFrame % 4) {
@@ -300,45 +268,10 @@ void displayMeasuringPrompt(void) {
             break;
     }
     
-    // Display heart rate if it changed
-    if (heartRate != lastHeartRateDisplayed) {
-        char hrBuffer[20];
-        sprintf(hrBuffer, "HR: %3d BPM", heartRate);
-        
-        // Clear previous value
-        LCD_drawBlock(20, 85, 140, 95, BLACK);
-        
-        // Display new value
-        uint16_t color = GREEN;
-        if (heartRate > 100) color = YELLOW;
-        if (heartRate > 120) color = RED;
-        
-        LCD_drawString(20, 85, hrBuffer, color, BLACK);
-        
-        lastHeartRateDisplayed = heartRate;
-    }
-    
-    // Draw a heart that "beats"
-    if (animationFrame % 2) {
-        // Larger heart for "beat" effect
-        LCD_drawDisk(80, 105, 12, RED);
-        LCD_drawDisk(90, 105, 12, RED);
-        LCD_drawBlock(80, 105, 90, 117, RED);
-        LCD_drawBlock(75, 100, 95, 105, BLACK);
-        LCD_drawBlock(85, 117, 86, 119, RED);
-    } else {
-        // Normal heart
-        LCD_drawDisk(80, 105, 10, RED);
-        LCD_drawDisk(90, 105, 10, RED);
-        LCD_drawBlock(80, 105, 90, 115, RED);
-        LCD_drawBlock(75, 100, 95, 105, BLACK);
-        LCD_drawBlock(85, 115, 86, 117, RED);
-    }
-    
     // Update animation frame
     animationFrame++;
     
-    printf("measuring4\n");
+//    printf("measuring4\n");
     
     // Timing for animation
     _delay_ms(250);
@@ -353,7 +286,7 @@ void displaySpinningPrompt(void) {
     
     // Display heart rate info
     char hrBuffer[20];
-    sprintf(hrBuffer, "Your HR: %3d BPM", lastHeartRate);
+    sprintf(hrBuffer, "Your HR: %3d BPM", heartRate);
     LCD_drawString(20, 30, hrBuffer, WHITE, BLACK);
     
     // Draw spinning wheels
@@ -414,7 +347,7 @@ void displayResultScreen(uint8_t win) {
 
 
 // Determine win odds based on heart rate
-uint8_t determineWinOdds(uint16_t heartRate) {
+uint8_t determineWinOdds(uint32_t heartRate) {
     // Win logic according to SRS-03:
     // If HR is low, increase odds of winning
     // If HR is high, decrease odds to elongate play
@@ -427,7 +360,8 @@ uint8_t determineWinOdds(uint16_t heartRate) {
     
     if (heartRate < LOW_HR_THRESHOLD) {
         // Low heart rate - higher odds (up to 40%)
-        winPercentage = 40 - ((heartRate * 30) / LOW_HR_THRESHOLD);
+        // winPercentage = 40 - ((heartRate * 30) / LOW_HR_THRESHOLD);
+        winPercentage = 100;
     } else if (heartRate > HIGH_HR_THRESHOLD) {
         // High heart rate - lower odds (down to 5%)
         winPercentage = 10 - ((heartRate - HIGH_HR_THRESHOLD) / 10);
@@ -439,26 +373,6 @@ uint8_t determineWinOdds(uint16_t heartRate) {
     
     printf("Win odds: %u%%\r\n", winPercentage);
     return winPercentage;
-}
-
-// Update timer for measuring pulse
-void updateTimer(void) {
-    if (measurementActive) {
-        // Increment elapsed time (250ms per call since we delay 250ms in the measuring function)
-        elapsedTimeMs += 250;
-        
-        // After 5 seconds of measurement, save the heart rate
-        if (elapsedTimeMs >= 5000 && measurementSamples > 0) {
-            // Use the current heart rate as our final value
-            lastHeartRate = heartRate;
-            
-            printf("Measurement complete: HR=%u BPM (Min: %u, Max: %u)\r\n", 
-                   lastHeartRate, minHeartRate, maxHeartRate);
-                   
-            // Reset measurement flag
-            measurementActive = 0;
-        }
-    }
 }
 
 // Button interrupt handler
@@ -483,52 +397,13 @@ ISR(INT0_vect) {
     currentState = STATE_MEASURING;
 }
 
+
+
 // Heart rate sensor interrupt handler (INT1 - PD3)
 ISR(INT1_vect) {
-    new_data_ready = true;
-    
-    // Update RNG seed on each interrupt for more randomness
-    rand_seed ^= (uint16_t)TCNT0;
-}
+    printf("INT1 Triggered\n");
 
-// Simple Linear Congruential Generator (LCG) random number implementation
-uint16_t custom_rand(void) {
-    // LCG parameters: a good choice for 16-bit values
-    rand_seed = (rand_seed * 31421 + 6927) & 0x7FFF;
-    return rand_seed;
-}
-
-// Get a random number between 0 and max-1
-uint16_t custom_rand_range(uint16_t max) {
-    if (max == 0) return 0;
-    return custom_rand() % max;
-}
-
-int main(void) {
-    max30102_result_t result;
-    uint8_t sample_count;
-    uint8_t write_ptr, read_ptr, overflow;
-    uint8_t int_status_1, int_status_2;
-    uint32_t loop_count = 0;
-    
-    // Initialize hardware
-    initialize();
-    
-    // Start with welcome screen
-    currentState = STATE_WELCOME;
-    
-    // Main loop
-    while (1) {
-        loop_count++;
-        if (new_data_ready) {
-            // printf("INT triggered!\r\n");
-            new_data_ready = false;
-        }
-
-        // Check for interrupts via register polling every 20 iterations
-        if (loop_count % 20 == 0) {
-            // Read interrupt status
-            if (max30102_read_interrupt_status(&int_status_1, &int_status_2)) {
+    if (max30102_read_interrupt_status(&int_status_1, &int_status_2)) {
                 if (int_status_1 & MAX30102_INT_A_FULL) {
                     // printf("INT detected via polling: 0x%02X\r\n", int_status_1);
                     
@@ -557,49 +432,59 @@ int main(void) {
                             // Process samples to calculate heart rate and SpO2
                             if (max30102_calculate_hr_spo2(samples, sample_count, &result)) {
                                 // Print sample data and results
-                                for (uint8_t i = 0; i < sample_count && i < 1; i++) {
-                                    printf("%lu\t%lu\t", samples[i].red, samples[i].ir);
-                                }
+//                                for (uint8_t i = 0; i < sample_count && i < 1; i++) {
+//                                    printf("%lu\t%lu\t", samples[i].red, samples[i].ir);
+//                                }
+                                
+                                heartRateReady = result.hr_valid;
                                 
                                 // Print heart rate and validity
-                                if (result.hr_valid) {
+                                if (heartRateReady) {
                                     printf("%ld\tValid\t\t", result.heart_rate);
+                                    heartRate = result.heart_rate;
                                 } else {
                                     printf("--\tInvalid\t\t");
                                 }
                                 
                                 // Print SpO2 and validity
-                                if (result.spo2_valid) {
-                                    printf("%ld%%\tValid\r\n", result.spo2);
-                                } else {
-                                    printf("--%%\tInvalid\r\n");
-                                }
+//                                if (result.spo2_valid) {
+//                                    printf("%ld%%\tValid\r\n", result.spo2);
+//                                } else {
+//                                    printf("--%%\tInvalid\r\n");
+//                                }
                             }
                         }
                     }
                 }
             }
-        }
-        
-        // Check interrupt pin state manually every 50 iterations
-        if (loop_count % 50 == 0) {
-            // Read PD3 pin state
-            if (!(PIND & (1 << PD3))) {
-                // printf("INT pin is LOW\r\n");
-            }
-        }
-        
-        // Every 100 loops, reconfigure interrupts to ensure they're enabled
-        if (loop_count % 100 == 0) {
-            // Re-enable FIFO almost full interrupt
-            max30102_set_interrupt_enables(MAX30102_INT_A_FULL, 0x00);
-            // printf("Reconfigured interrupts\r\n");
-        }
-        
-        // Small delay to allow sensor to collect data
-        _delay_ms(10);
-        
-//        // State machine
+    
+    // Update RNG seed on each interrupt for more randomness
+    rand_seed ^= (uint16_t)TCNT0;
+}
+
+// Simple Linear Congruential Generator (LCG) random number implementation
+uint16_t custom_rand(void) {
+    // LCG parameters: a good choice for 16-bit values
+    rand_seed = (rand_seed * 31421 + 6927) & 0x7FFF;
+    return rand_seed;
+}
+
+// Get a random number between 0 and max-1
+uint16_t custom_rand_range(uint16_t max) {
+    if (max == 0) return 0;
+    return custom_rand() % max;
+}
+
+int main(void) {
+    // Initialize hardware
+    initialize();
+    
+    // Start with welcome screen
+    currentState = STATE_WELCOME;
+    
+    // Main loop
+    while (1) {   
+        // State machine
 //        switch (currentState) {
 //            case STATE_WELCOME:
 //                displayWelcomeScreen();
@@ -614,8 +499,8 @@ int main(void) {
 //                
 //                printf("measuring\n");
 //                // Check if button was released
-//                if (PIND & (1 << PIND2)) {
-//                    printf("Button released, HR=%u BPM\r\n", lastHeartRate);
+//                if (heartRateReady) {
+//                    printf("Button released, HR=%u BPM\r\n", heartRate);
 //                    
 //                    // Button released, determine odds and start spinning
 //                    currentState = STATE_SPINNING;
@@ -634,7 +519,7 @@ int main(void) {
 //                    spinCount = 0;
 //                    
 //                    // Determine win based on heart rate
-//                    uint8_t winPercentage = determineWinOdds(lastHeartRate);
+//                    uint8_t winPercentage = determineWinOdds(heartRate);
 //                    uint8_t randomValue = custom_rand_range(100);
 //                    uint8_t win = (randomValue < winPercentage);
 //                    

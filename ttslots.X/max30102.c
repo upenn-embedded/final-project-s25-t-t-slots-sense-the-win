@@ -396,27 +396,6 @@ bool max30102_read_revision_id(uint8_t *rev_id) {
  * @param result Pointer to store the results
  * @return true if calculation successful, false otherwise
  */
-/**
- * @brief Process samples to calculate heart rate and SpO2
- * @param samples Array of samples
- * @param count Number of samples
- * @param result Pointer to store the results
- * @return true if calculation successful, false otherwise
- */
-/**
- * @brief Process samples to calculate heart rate and SpO2
- * @param samples Array of samples
- * @param count Number of samples
- * @param result Pointer to store the results
- * @return true if calculation successful, false otherwise
- */
-/**
- * @brief Process samples to calculate heart rate and SpO2
- * @param samples Array of samples
- * @param count Number of samples
- * @param result Pointer to store the results
- * @return true if calculation successful, false otherwise
- */
 bool max30102_calculate_hr_spo2(max30102_fifo_sample_t *samples, uint8_t count, max30102_result_t *result) {
     if (count == 0 || samples == NULL || result == NULL) {
         return false;
