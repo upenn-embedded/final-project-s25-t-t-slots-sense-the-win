@@ -1,8 +1,4 @@
-# T&T Slots - Sense The Win
-
-## ESE 3500 Final Project
-
-### Video
+# Video
 
 {% include youtube.html id="dQw4w9WgXcQ" %}
 
