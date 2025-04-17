@@ -6,6 +6,8 @@
 
 {% include youtube.html id="dQw4w9WgXcQ"}
 
+### Images
+
 ## TODOs:
 At the bare minimum, the page must have:
 
