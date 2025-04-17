@@ -6,7 +6,36 @@
 
 ### Images
 
-## TODOs:
+### SRS Validation
+
+**SRS-01** - See demo video
+
+**SRS-02** - See demo video
+
+**SRS-03** - `Insert formula here`
+
+**SRS-04** - We have multiple sound effects which are achieved via **TODO**, and they are initiated via functions like `TODO`
+
+Our final design (...)
+
+### HRS Validation
+
+**HRS-01** - *Insert UART pictures of different measurements*
+
+**HRS-02** - *Insert scope pictures of different frequency waveforms*
+
+**HRS-03** - See demo video
+
+**HRS-04** - *Insert button with HR sensor picture*
+
+### Conclusions
+
+**Tony:** I believe (...)
+
+**Theodor:** My experience (...)
+
+### TODOs
+
 At the bare minimum, the page must have:
 
 - [ ] A video of the final product
