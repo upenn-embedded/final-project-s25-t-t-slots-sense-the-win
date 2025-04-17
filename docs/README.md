@@ -16,7 +16,7 @@
 
 **SRS-04** - We have multiple sound effects which are achieved via **TODO**, and they are initiated via functions like `TODO`
 
-Our final design (...)
+Our final design (... more conclusions about SRS ...)
 
 ### HRS Validation
 
@@ -27,6 +27,8 @@ Our final design (...)
 **HRS-03** - See demo video
 
 **HRS-04** - *Insert button with HR sensor picture*
+
+Our final design (... more conclusions about HRS ...)
 
 ### Conclusions
 
@@ -61,7 +63,7 @@ SRS Validation
 HRS Validation
 
 - [ ] Based on your quantified system performance, comment on how you achieved or fell short of your expected hardware requirements.
-- [ ] Validate at least two software requirements, showing how you tested and your proof of work (videos, images, logic analyzer/oscilloscope captures, etc.).
+- [ ] Validate at least two hardware requirements, showing how you tested and your proof of work (videos, images, logic analyzer/oscilloscope captures, etc.).
 
 Conclusion
 
