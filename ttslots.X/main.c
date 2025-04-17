@@ -16,7 +16,7 @@ static uint16_t rand_seed = 1;
 #define I2C_FREQUENCY      400000UL  // 400kHz for MAX30102 communication
 
 // Define the number of samples to read in each iteration
-#define SAMPLE_COUNT       25
+#define SAMPLE_COUNT       10
 
 // Sample buffer
 max30102_fifo_sample_t samples[SAMPLE_COUNT];
@@ -403,60 +403,60 @@ ISR(INT0_vect) {
 ISR(INT1_vect) {
     printf("INT1 Triggered\n");
 
-//    if (max30102_read_interrupt_status(&int_status_1, &int_status_2)) {
-//                if (int_status_1 & MAX30102_INT_A_FULL) {
-//                    // printf("INT detected via polling: 0x%02X\r\n", int_status_1);
-//                    
-//                    // Read FIFO pointers to determine how many samples to read
-//                    if (max30102_read_fifo_ptrs(&write_ptr, &read_ptr, &overflow)) {
-//                        // Calculate number of samples to read
-//                        if (write_ptr >= read_ptr) {
-//                            sample_count = write_ptr - read_ptr;
-//                        } else {
-//                            sample_count = 32 - read_ptr + write_ptr;  // FIFO is 32 samples deep
-//                        }
-//                        
-//                        // Print FIFO status
-//                        // printf("FIFO: W=%u R=%u OVF=%u Count=%u\r\n", write_ptr, read_ptr, overflow, sample_count);
-//                        
-//                        // Cap sample count to buffer size
-//                        if (sample_count > SAMPLE_COUNT) {
-//                            sample_count = SAMPLE_COUNT;
-//                        }
-//                        
-//                        // Only process data if we have enough samples
-//                        if (sample_count >= 5) {
-//                            // Read samples from FIFO
-//                            sample_count = max30102_read_fifo_samples(samples, sample_count);
-//                            
-//                            // Process samples to calculate heart rate and SpO2
-//                            if (max30102_calculate_hr_spo2(samples, sample_count, &result)) {
-//                                // Print sample data and results
-////                                for (uint8_t i = 0; i < sample_count && i < 1; i++) {
-////                                    printf("%lu\t%lu\t", samples[i].red, samples[i].ir);
-////                                }
-//                                
-//                                heartRateReady = result.hr_valid;
-//                                
-//                                // Print heart rate and validity
-//                                if (heartRateReady) {
-//                                    printf("%ld\tValid\t\t", result.heart_rate);
-//                                    heartRate = result.heart_rate;
-//                                } else {
-//                                    printf("--\tInvalid\t\t");
+    if (max30102_read_interrupt_status(&int_status_1, &int_status_2)) {
+                if (int_status_1 & MAX30102_INT_A_FULL) {
+                    // printf("INT detected via polling: 0x%02X\r\n", int_status_1);
+                    
+                    // Read FIFO pointers to determine how many samples to read
+                    if (max30102_read_fifo_ptrs(&write_ptr, &read_ptr, &overflow)) {
+                        // Calculate number of samples to read
+                        if (write_ptr >= read_ptr) {
+                            sample_count = write_ptr - read_ptr;
+                        } else {
+                            sample_count = 32 - read_ptr + write_ptr;  // FIFO is 32 samples deep
+                        }
+                        
+                        // Print FIFO status
+                        // printf("FIFO: W=%u R=%u OVF=%u Count=%u\r\n", write_ptr, read_ptr, overflow, sample_count);
+                        
+                        // Cap sample count to buffer size
+                        if (sample_count > SAMPLE_COUNT) {
+                            sample_count = SAMPLE_COUNT;
+                        }
+                        
+                        // Only process data if we have enough samples
+                        if (sample_count >= 5) {
+                            // Read samples from FIFO
+                            sample_count = max30102_read_fifo_samples(samples, sample_count);
+                            
+                            // Process samples to calculate heart rate and SpO2
+                            if (max30102_calculate_hr_spo2(samples, sample_count, &result)) {
+                                // Print sample data and results
+//                                for (uint8_t i = 0; i < sample_count && i < 1; i++) {
+//                                    printf("%lu\t%lu\t", samples[i].red, samples[i].ir);
 //                                }
-//                                
-//                                // Print SpO2 and validity
-////                                if (result.spo2_valid) {
-////                                    printf("%ld%%\tValid\r\n", result.spo2);
-////                                } else {
-////                                    printf("--%%\tInvalid\r\n");
-////                                }
-//                            }
-//                        }
-//                    }
-//                }
-//            }
+                                
+                                heartRateReady = result.hr_valid;
+                                
+                                // Print heart rate and validity
+                                if (heartRateReady) {
+                                    printf("%ld\tValid\t\t", result.heart_rate);
+                                    heartRate = result.heart_rate;
+                                } else {
+                                    printf("--\tInvalid\t\t");
+                                }
+                                
+                                // Print SpO2 and validity
+//                                if (result.spo2_valid) {
+//                                    printf("%ld%%\tValid\r\n", result.spo2);
+//                                } else {
+//                                    printf("--%%\tInvalid\r\n");
+//                                }
+                            }
+                        }
+                    }
+                }
+            }
     
     // Update RNG seed on each interrupt for more randomness
     rand_seed ^= (uint16_t)TCNT0;
@@ -486,123 +486,123 @@ int main(void) {
     // Main loop
     while (1) {   
         // State machine
-        switch (currentState) {
-            case STATE_WELCOME:
-                displayWelcomeScreen();
-                break;
-                
-            case STATE_PRESS_BUTTON:
-                displayPressButtonPrompt();
-                break;
-                
-            case STATE_MEASURING:
-                displayMeasuringPrompt();
-                
-                printf("measuring\n");
-                loop_count++;
-       
-
-        // Check for interrupts via register polling every 20 iterations
-//        if (loop_count % 20 == 0) {
-//            // Read interrupt status
-//            if (max30102_read_interrupt_status(&int_status_1, &int_status_2)) {
-//                if (int_status_1 & MAX30102_INT_A_FULL) {
-//                    // printf("INT detected via polling: 0x%02X\r\n", int_status_1);
-//                    
-//                    // Read FIFO pointers to determine how many samples to read
-//                    if (max30102_read_fifo_ptrs(&write_ptr, &read_ptr, &overflow)) {
-//                        // Calculate number of samples to read
-//                        if (write_ptr >= read_ptr) {
-//                            sample_count = write_ptr - read_ptr;
-//                        } else {
-//                            sample_count = 32 - read_ptr + write_ptr;  // FIFO is 32 samples deep
-//                        }
-//                        
-//                        // Print FIFO status
-//                        // printf("FIFO: W=%u R=%u OVF=%u Count=%u\r\n", write_ptr, read_ptr, overflow, sample_count);
-//                        
-//                        // Cap sample count to buffer size
-//                        if (sample_count > SAMPLE_COUNT) {
-//                            sample_count = SAMPLE_COUNT;
-//                        }
-//                        
-//                        // Only process data if we have enough samples
-//                        if (sample_count >= 5) {
-//                            // Read samples from FIFO
-//                            sample_count = max30102_read_fifo_samples(samples, sample_count);
-//                            
-//                            // Process samples to calculate heart rate and SpO2
-//                            if (max30102_calculate_hr_spo2(samples, sample_count, &result)) {
-//                                // Print sample data and results
-////                                for (uint8_t i = 0; i < sample_count && i < 1; i++) {
-////                                    printf("%lu\t%lu\t", samples[i].red, samples[i].ir);
+//        switch (currentState) {
+//            case STATE_WELCOME:
+//                displayWelcomeScreen();
+//                break;
+//                
+//            case STATE_PRESS_BUTTON:
+//                displayPressButtonPrompt();
+//                break;
+//                
+//            case STATE_MEASURING:
+//                displayMeasuringPrompt();
+//                
+//                printf("measuring\n");
+//                loop_count++;
+//       
+//
+//        // Check for interrupts via register polling every 20 iterations
+////        if (loop_count % 20 == 0) {
+////            // Read interrupt status
+////            if (max30102_read_interrupt_status(&int_status_1, &int_status_2)) {
+////                if (int_status_1 & MAX30102_INT_A_FULL) {
+////                    // printf("INT detected via polling: 0x%02X\r\n", int_status_1);
+////                    
+////                    // Read FIFO pointers to determine how many samples to read
+////                    if (max30102_read_fifo_ptrs(&write_ptr, &read_ptr, &overflow)) {
+////                        // Calculate number of samples to read
+////                        if (write_ptr >= read_ptr) {
+////                            sample_count = write_ptr - read_ptr;
+////                        } else {
+////                            sample_count = 32 - read_ptr + write_ptr;  // FIFO is 32 samples deep
+////                        }
+////                        
+////                        // Print FIFO status
+////                        // printf("FIFO: W=%u R=%u OVF=%u Count=%u\r\n", write_ptr, read_ptr, overflow, sample_count);
+////                        
+////                        // Cap sample count to buffer size
+////                        if (sample_count > SAMPLE_COUNT) {
+////                            sample_count = SAMPLE_COUNT;
+////                        }
+////                        
+////                        // Only process data if we have enough samples
+////                        if (sample_count >= 5) {
+////                            // Read samples from FIFO
+////                            sample_count = max30102_read_fifo_samples(samples, sample_count);
+////                            
+////                            // Process samples to calculate heart rate and SpO2
+////                            if (max30102_calculate_hr_spo2(samples, sample_count, &result)) {
+////                                // Print sample data and results
+//////                                for (uint8_t i = 0; i < sample_count && i < 1; i++) {
+//////                                    printf("%lu\t%lu\t", samples[i].red, samples[i].ir);
+//////                                }
+//////                                
+////                                // Print heart rate and validity
+////                                heartRateReady = result.hr_valid;
+////                                if (heartRateReady) {
+////                                    heartRate = result.heart_rate;
+////                                    printf("%ld\tValid\t\t", heartRate);
+////                                } else {
+////                                    printf("--\tInvalid\t\t");
 ////                                }
 ////                                
-//                                // Print heart rate and validity
-//                                heartRateReady = result.hr_valid;
-//                                if (heartRateReady) {
-//                                    heartRate = result.heart_rate;
-//                                    printf("%ld\tValid\t\t", heartRate);
-//                                } else {
-//                                    printf("--\tInvalid\t\t");
-//                                }
-//                                
-//                                // Print SpO2 and validity
-////                                if (result.spo2_valid) {
-////                                    printf("%ld%%\tValid\r\n", result.spo2);
-////                                } else {
-////                                    printf("--%%\tInvalid\r\n");
-////                                }
-//                            }
-//                        }
-//                    }
+////                                // Print SpO2 and validity
+//////                                if (result.spo2_valid) {
+//////                                    printf("%ld%%\tValid\r\n", result.spo2);
+//////                                } else {
+//////                                    printf("--%%\tInvalid\r\n");
+//////                                }
+////                            }
+////                        }
+////                    }
+////                }
+////            }
+////        }
+////        
+////        // Small delay to allow sensor to collect data
+////        _delay_ms(10);
+//                // Check if button was released
+//                if (heartRateReady) {
+//                    printf("Button released, HR=%u BPM\r\n", heartRate);
+//                    
+//                    // Button released, determine odds and start spinning
+//                    currentState = STATE_SPINNING;
+//                    animationFrame = 0;
 //                }
-//            }
+//                break;
+//                
+//            case STATE_SPINNING:
+//                displaySpinningPrompt();
+//                
+//                // Simulate spinning for 3 seconds, then show result
+//                static uint8_t spinCount = 0;
+//                spinCount++;
+//                
+//                if (spinCount > 15) {  // ~3 seconds (15 * 200ms)
+//                    spinCount = 0;
+//                    
+//                    // Determine win based on heart rate
+//                    uint8_t winPercentage = determineWinOdds(heartRate);
+//                    uint8_t randomValue = custom_rand_range(100);
+//                    uint8_t win = (randomValue < winPercentage);
+//                    
+//                    // Show result
+//                    currentState = STATE_RESULT;
+//                    displayResultScreen(win);
+//                }
+//                break;
+//                
+//            case STATE_RESULT:
+//                // This state is handled by displayResultScreen
+//                // which automatically transitions back to welcome
+//                break;
+//                
+//            default:
+//                // In case of unknown state, reset to welcome
+//                currentState = STATE_WELCOME;
+//                break;
 //        }
-//        
-//        // Small delay to allow sensor to collect data
-//        _delay_ms(10);
-                // Check if button was released
-                if (heartRateReady) {
-                    printf("Button released, HR=%u BPM\r\n", heartRate);
-                    
-                    // Button released, determine odds and start spinning
-                    currentState = STATE_SPINNING;
-                    animationFrame = 0;
-                }
-                break;
-                
-            case STATE_SPINNING:
-                displaySpinningPrompt();
-                
-                // Simulate spinning for 3 seconds, then show result
-                static uint8_t spinCount = 0;
-                spinCount++;
-                
-                if (spinCount > 15) {  // ~3 seconds (15 * 200ms)
-                    spinCount = 0;
-                    
-                    // Determine win based on heart rate
-                    uint8_t winPercentage = determineWinOdds(heartRate);
-                    uint8_t randomValue = custom_rand_range(100);
-                    uint8_t win = (randomValue < winPercentage);
-                    
-                    // Show result
-                    currentState = STATE_RESULT;
-                    displayResultScreen(win);
-                }
-                break;
-                
-            case STATE_RESULT:
-                // This state is handled by displayResultScreen
-                // which automatically transitions back to welcome
-                break;
-                
-            default:
-                // In case of unknown state, reset to welcome
-                currentState = STATE_WELCOME;
-                break;
-        }
     }
     
     return 0;

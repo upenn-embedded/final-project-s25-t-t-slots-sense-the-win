@@ -18,7 +18,7 @@
 #define I2C_FREQUENCY      400000UL  // 400kHz for MAX30102 communication
 
 // Define the number of samples to read in each iteration
-#define SAMPLE_COUNT       25
+#define SAMPLE_COUNT       10
 
 // Global variable for interrupt data
 volatile bool new_data_ready = false;

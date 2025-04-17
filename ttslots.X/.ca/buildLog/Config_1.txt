@@ -1,0 +1,83 @@
+make -f nbproject/Makefile-Config_1.mk SUBPROJECTS= .clean-conf
+make[1]: Entering directory 'C:/Users/24112/OneDrive - PennO365/Penn/ESE 3500/ttslots/ttslots.X'
+rm -f  -r .ca/build/Config_1/production
+rm -f  -r .ca/dist/Config_1/production
+make[1]: Leaving directory 'C:/Users/24112/OneDrive - PennO365/Penn/ESE 3500/ttslots/ttslots.X'
+[32mCLEAN SUCCESSFUL (total time: 101ms)[0m
+make -f nbproject/Makefile-Config_1.mk SUBPROJECTS= .build-conf
+make  -f nbproject/Makefile-Config_1.mk .ca/dist/Config_1/production/ttslots.X.production.hex
+make[2]: Entering directory 'C:/Users/24112/OneDrive - PennO365/Penn/ESE 3500/ttslots/ttslots.X'
+"C:\Program Files\Microchip\xc8\v3.00\bin\xc8-cc.exe"  -mcpu=ATmega328PB -c  -x c -D__ATmega328PB__   -mdfp="C:/Users/24112/.mchp_packs/Microchip/ATmega_DFP/3.1.264/xc8"  -Wl,--gc-sections -O1 -ffunction-sections -fdata-sections -fshort-enums -fno-common -funsigned-char -funsigned-bitfields -Wall -DXPRJ_Config_1=Config_1    -gdwarf-3 -mno-const-data-in-progmem     -MD -MP -MF ".ca/build/Config_1/production/ST7735.o.d" -MT ".ca/build/Config_1/production/ST7735.o.d" -MT .ca/build/Config_1/production/ST7735.o -o .ca/build/Config_1/production/ST7735.o ST7735.c 
+make[2]: Leaving directory 'C:/Users/24112/OneDrive - PennO365/Penn/ESE 3500/ttslots/ttslots.X'
+make[2]: Entering directory 'C:/Users/24112/OneDrive - PennO365/Penn/ESE 3500/ttslots/ttslots.X'
+"C:\Program Files\Microchip\xc8\v3.00\bin\xc8-cc.exe"  -mcpu=ATmega328PB -c  -x c -D__ATmega328PB__   -mdfp="C:/Users/24112/.mchp_packs/Microchip/ATmega_DFP/3.1.264/xc8"  -Wl,--gc-sections -O1 -ffunction-sections -fdata-sections -fshort-enums -fno-common -funsigned-char -funsigned-bitfields -Wall -DXPRJ_Config_1=Config_1    -gdwarf-3 -mno-const-data-in-progmem     -MD -MP -MF ".ca/build/Config_1/production/uart.o.d" -MT ".ca/build/Config_1/production/uart.o.d" -MT .ca/build/Config_1/production/uart.o -o .ca/build/Config_1/production/uart.o uart.c 
+make[2]: Leaving directory 'C:/Users/24112/OneDrive - PennO365/Penn/ESE 3500/ttslots/ttslots.X'
+make[2]: Entering directory 'C:/Users/24112/OneDrive - PennO365/Penn/ESE 3500/ttslots/ttslots.X'
+"C:\Program Files\Microchip\xc8\v3.00\bin\xc8-cc.exe"  -mcpu=ATmega328PB -c  -x c -D__ATmega328PB__   -mdfp="C:/Users/24112/.mchp_packs/Microchip/ATmega_DFP/3.1.264/xc8"  -Wl,--gc-sections -O1 -ffunction-sections -fdata-sections -fshort-enums -fno-common -funsigned-char -funsigned-bitfields -Wall -DXPRJ_Config_1=Config_1    -gdwarf-3 -mno-const-data-in-progmem     -MD -MP -MF ".ca/build/Config_1/production/LCD_GFX.o.d" -MT ".ca/build/Config_1/production/LCD_GFX.o.d" -MT .ca/build/Config_1/production/LCD_GFX.o -o .ca/build/Config_1/production/LCD_GFX.o LCD_GFX.c 
+make[2]: Leaving directory 'C:/Users/24112/OneDrive - PennO365/Penn/ESE 3500/ttslots/ttslots.X'
+make[2]: Entering directory 'C:/Users/24112/OneDrive - PennO365/Penn/ESE 3500/ttslots/ttslots.X'
+"C:\Program Files\Microchip\xc8\v3.00\bin\xc8-cc.exe"  -mcpu=ATmega328PB -c  -x c -D__ATmega328PB__   -mdfp="C:/Users/24112/.mchp_packs/Microchip/ATmega_DFP/3.1.264/xc8"  -Wl,--gc-sections -O1 -ffunction-sections -fdata-sections -fshort-enums -fno-common -funsigned-char -funsigned-bitfields -Wall -DXPRJ_Config_1=Config_1    -gdwarf-3 -mno-const-data-in-progmem     -MD -MP -MF ".ca/build/Config_1/production/i2c.o.d" -MT ".ca/build/Config_1/production/i2c.o.d" -MT .ca/build/Config_1/production/i2c.o -o .ca/build/Config_1/production/i2c.o i2c.c 
+make[2]: Leaving directory 'C:/Users/24112/OneDrive - PennO365/Penn/ESE 3500/ttslots/ttslots.X'
+[31mIn file included from ST7735.c:16:0:
+c:\program files\microchip\xc8\v3.00\avr\avr\include\util\delay.h:92:3: warning: #warning "F_CPU not defined for <util/delay.h>" [-Wcpp]
+make[2]: Entering directory 'C:/Users/24112/OneDrive - PennO365/Penn/ESE 3500/ttslots/ttslots.X'
+ # warning "F_CPU not defined for <util/delay.h>"
+   ^
+In file included from uart.c:2:0:
+uart.h:43:6: warning: #warning "F_CPU not defined. Defaulting to 16MHz" [-Wcpp]
+     #warning "F_CPU not defined. Defaulting to 16MHz"
+      ^
+LCD_GFX.c: In function 'LCD_drawChar':
+LCD_GFX.c:54:20: warning: suggest parentheses around comparison in operand of '&' [-Wparentheses]
+     if ((pixels>>j)&1==1){
+                    ^
+i2c.c:99:13: warning: 'i2c_wait' defined but not used [-Wunused-function]
+ static bool i2c_wait(uint16_t timeout_ms) {
+             ^
+i2c.c:48:13: warning: 'delay_ms' defined but not used [-Wunused-function]
+ static void delay_ms(uint16_t ms) {
+"C:\Program Files\Microchip\xc8\v3.00\bin\xc8-cc.exe"  -mcpu=ATmega328PB -c  -x c -D__ATmega328PB__   -mdfp="C:/Users/24112/.mchp_packs/Microchip/ATmega_DFP/3.1.264/xc8"  -Wl,--gc-sections -O1 -ffunction-sections -fdata-sections -fshort-enums -fno-common -funsigned-char -funsigned-bitfields -Wall -DXPRJ_Config_1=Config_1    -gdwarf-3 -mno-const-data-in-progmem     -MD -MP -MF ".ca/build/Config_1/production/main.o.d" -MT ".ca/build/Config_1/production/main.o.d" -MT .ca/build/Config_1/production/main.o -o .ca/build/Config_1/production/main.o main.c 
+             ^
+make[2]: Leaving directory 'C:/Users/24112/OneDrive - PennO365/Penn/ESE 3500/ttslots/ttslots.X'
+main.c: In function 'displayMeasuringPrompt':
+main.c:243:20: warning: unused variable 'lastHeartRateDisplayed' [-Wunused-variable]
+     static uint8_t lastHeartRateDisplayed = 0;
+                    ^
+main.c: In function 'displaySpinningPrompt':
+main.c:289:23: warning: format '%d' expects argument of type 'int', but argument 3 has type 'uint32_t {aka volatile long unsigned int}' [-Wformat=]
+     sprintf(hrBuffer, "Your HR: %3d BPM", heartRate);
+                       ^
+main.c: In function 'main':
+main.c:567:28: warning: format '%u' expects argument of type 'unsigned int', but argument 2 has type 'uint32_t {aka volatile long unsigned int}' [-Wformat=]
+                     printf("Button released, HR=%u BPM\r\n", heartRate);
+                            ^[0m
+make[2]: Entering directory 'C:/Users/24112/OneDrive - PennO365/Penn/ESE 3500/ttslots/ttslots.X'
+"C:\Program Files\Microchip\xc8\v3.00\bin\xc8-cc.exe"  -mcpu=ATmega328PB -c  -x c -D__ATmega328PB__   -mdfp="C:/Users/24112/.mchp_packs/Microchip/ATmega_DFP/3.1.264/xc8"  -Wl,--gc-sections -O1 -ffunction-sections -fdata-sections -fshort-enums -fno-common -funsigned-char -funsigned-bitfields -Wall -DXPRJ_Config_1=Config_1    -gdwarf-3 -mno-const-data-in-progmem     -MD -MP -MF ".ca/build/Config_1/production/max30102.o.d" -MT ".ca/build/Config_1/production/max30102.o.d" -MT .ca/build/Config_1/production/max30102.o -o .ca/build/Config_1/production/max30102.o max30102.c 
+make[2]: Leaving directory 'C:/Users/24112/OneDrive - PennO365/Penn/ESE 3500/ttslots/ttslots.X'
+[31mmax30102.c:35:17: warning: 'ir_ac_prev' defined but not used [-Wunused-variable]
+ static uint32_t ir_ac_prev = 0;
+                 ^
+max30102.c:36:17: warning: 'red_ac_prev' defined but not used [-Wunused-variable]
+ static uint32_t red_ac_prev = 0;
+                 ^
+max30102.c:37:14: warning: 'ir_dc_prev' defined but not used [-Wunused-variable]
+ static float ir_dc_prev = 0;
+              ^
+max30102.c:38:14: warning: 'red_dc_prev' defined but not used [-Wunused-variable]
+ static float red_dc_prev = 0;
+              ^
+max30102.c:39:16: warning: 'heart_rate_history' defined but not used [-Wunused-variable]
+ static int32_t heart_rate_history[8] = {0};
+                ^
+max30102.c:40:16: warning: 'spo2_history' defined but not used [-Wunused-variable]
+ static int32_t spo2_history[8] = {0};
+                ^
+max30102.c:41:16: warning: 'history_index' defined but not used [-Wunused-variable]
+ static uint8_t history_index = 0;
+                ^[0m
+make[2]: Entering directory 'C:/Users/24112/OneDrive - PennO365/Penn/ESE 3500/ttslots/ttslots.X'
+"C:\Program Files\Microchip\xc8\v3.00\bin\xc8-cc.exe"  -mcpu=ATmega328PB -Wl,-Map=.ca/dist/Config_1/production/ttslots.X.production.map  -DXPRJ_Config_1=Config_1  -Wl,--defsym=__MPLAB_BUILD=1   -mdfp="C:/Users/24112/.mchp_packs/Microchip/ATmega_DFP/3.1.264/xc8"  -Wl,--gc-sections -O1 -ffunction-sections -fdata-sections -fshort-enums -fno-common -funsigned-char -funsigned-bitfields -Wall -gdwarf-3 -mno-const-data-in-progmem      -Wl,--memorysummary,.ca/dist/Config_1/production/memoryfile.xml -o .ca/dist/Config_1/production/ttslots.X.production.elf  -o .ca/dist/Config_1/production/ttslots.X.production.elf  .ca/build/Config_1/production/LCD_GFX.o .ca/build/Config_1/production/ST7735.o .ca/build/Config_1/production/main.o .ca/build/Config_1/production/uart.o .ca/build/Config_1/production/i2c.o .ca/build/Config_1/production/max30102.o      -Wl,--start-group  -Wl,-lm -Wl,--end-group 
+Info: Loading file: c:\program files\microchip\xc8\v3.00\avr\avr\bin\../lib\ldscripts/avr5.xn
+"C:\Program Files\Microchip\xc8\v3.00\bin"\\avr-objcopy -O ihex ".ca/dist/Config_1/production/ttslots.X.production.elf" ".ca/dist/Config_1/production/ttslots.X.production.hex"
+make[2]: Leaving directory 'C:/Users/24112/OneDrive - PennO365/Penn/ESE 3500/ttslots/ttslots.X'
+[32mBUILD SUCCESSFUL (total time: 565ms)[0m
