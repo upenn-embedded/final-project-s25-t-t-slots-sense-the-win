@@ -34,6 +34,10 @@ Our final design (...)
 
 **Theodor:** My experience (...)
 
+### References
+
+**TODO: insert all documentation used**
+
 ### TODOs
 
 At the bare minimum, the page must have:
