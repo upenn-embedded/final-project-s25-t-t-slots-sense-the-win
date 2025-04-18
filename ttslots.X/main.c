@@ -195,8 +195,8 @@ void displayPressButtonPrompt(void) {
         LCD_drawString(15, 15, "READY TO PLAY?", GREEN, BLACK);
         
         // Draw button prompt
-        LCD_drawString(5, 40, "Press & Hold Button", WHITE, BLACK);
-        LCD_drawString(20, 55, "to Measure HR", WHITE, BLACK);
+        LCD_drawString(5, 40, "Press the Button", WHITE, BLACK);
+        LCD_drawString(20, 55, "to try your luck!", WHITE, BLACK);
         
         // Draw a simple button graphic
         LCD_drawBlock(60, 70, 100, 90, BLUE);
@@ -306,6 +306,7 @@ void displaySpinningPrompt(void) {
     
     // Update animation frame
     animationFrame++;
+    rand_seed ^= (uint16_t)TCNT0;
     
     // Slow down animation
     _delay_ms(200);
@@ -409,8 +410,10 @@ ISR(INT0_vect) {
     
     // Button was pressed
     printf("button pressed\n");
-    animationFrame = 0;
-    currentState = STATE_MEASURING;
+    if (currentState == STATE_PRESS_BUTTON) {
+        animationFrame = 0;
+        currentState = STATE_MEASURING;      
+    }
 }
 
 
@@ -470,7 +473,7 @@ ISR(INT1_vect) {
             }
     
     // Update RNG seed on each interrupt for more randomness
-    rand_seed ^= (uint16_t)TCNT0;
+    
 }
 
 // Simple Linear Congruential Generator (LCG) random number implementation
@@ -496,6 +499,7 @@ int main(void) {
     
     // Main loop
     while (1) {   
+        rand_seed ^= (uint16_t)TCNT0;
         // State machine
         switch (currentState) {
             case STATE_WELCOME:
