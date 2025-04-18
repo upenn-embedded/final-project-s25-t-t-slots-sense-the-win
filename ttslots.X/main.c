@@ -21,6 +21,8 @@ static uint16_t rand_seed = 1;
 // Sample buffer
 max30102_fifo_sample_t samples[SAMPLE_COUNT];
 
+#define BUZZER_PIN PD5    // Buzzer connected to PD5/OC0B
+
 // Define states for the slot machine
 typedef enum {
     STATE_WELCOME,
@@ -52,6 +54,53 @@ void setupButtonInterrupt(void);
 uint8_t determineWinOdds(uint32_t heartRate);
 uint16_t custom_rand(void);
 uint16_t custom_rand_range(uint16_t max);
+
+// Buzzer control functions
+void init_buzzer() {
+    // Set buzzer pin as output
+    DDRD |= (1 << BUZZER_PIN);
+}
+
+// Play specific frequencies with fixed delays
+void play_500hz(uint16_t duration_ms) {
+    uint16_t cycles = duration_ms;  // Each cycle is about 1ms for 500Hz
+    for (uint16_t i = 0; i < cycles; i++) {
+        PORTD |= (1 << BUZZER_PIN);
+        _delay_us(1000);  // Half period for 500Hz = 1000us
+        PORTD &= ~(1 << BUZZER_PIN);
+        _delay_us(1000);
+    }
+}
+
+void play_1000hz(uint16_t duration_ms) {
+    uint16_t cycles = duration_ms * 2;  // Each cycle is about 0.5ms for 1000Hz
+    for (uint16_t i = 0; i < cycles; i++) {
+        PORTD |= (1 << BUZZER_PIN);
+        _delay_us(500);  // Half period for 1000Hz = 500us
+        PORTD &= ~(1 << BUZZER_PIN);
+        _delay_us(500);
+    }
+}
+
+void play_1500hz(uint16_t duration_ms) {
+    uint16_t cycles = duration_ms * 3;  // Each cycle is about 0.33ms for 1500Hz
+    for (uint16_t i = 0; i < cycles; i++) {
+        PORTD |= (1 << BUZZER_PIN);
+        _delay_us(333);  // Half period for 1500Hz = 333us
+        PORTD &= ~(1 << BUZZER_PIN);
+        _delay_us(333);
+    }
+}
+
+void play_2000hz(uint16_t duration_ms) {
+    uint16_t cycles = duration_ms * 4;  // Each cycle is about 0.25ms for 2000Hz
+    for (uint16_t i = 0; i < cycles; i++) {
+        PORTD |= (1 << BUZZER_PIN);
+        _delay_us(250);  // Half period for 2000Hz = 250us
+        PORTD &= ~(1 << BUZZER_PIN);
+        _delay_us(250);
+    }
+}
 
 bool init_peripherals(void) {
     // Initialize I2C at 400kHz
@@ -100,6 +149,8 @@ bool init_peripherals(void) {
 void initialize(void) {
     // Initialize LCD
     lcd_init();
+    
+    init_buzzer();
     
     // Setup button input with internal pull-up
     // Using PD2 (INT0) as the button input pin
@@ -318,6 +369,9 @@ void displayResultScreen(uint8_t win) {
     char symbols[4] = {'7', '$', '#', '@'};
     
     if (win) {
+        play_2000hz(50);
+        play_1500hz(50);
+        play_2000hz(50);
         // Win screen
         LCD_drawString(30, 10, "YOU WIN!", YELLOW, BLACK);
         LCD_drawString(20, 30, "JACKPOT!!!", GREEN, BLACK);
@@ -334,6 +388,9 @@ void displayResultScreen(uint8_t win) {
             LCD_drawChar(x - 3, 80, symbol, WHITE, BLUE);
         }
     } else {
+        play_500hz(50);
+        play_1000hz(50);
+        play_500hz(50);
         // Lose screen
         LCD_drawString(30, 10, "TRY AGAIN", RED, BLACK);
         LCD_drawString(15, 30, "Better luck", WHITE, BLACK);
@@ -503,10 +560,14 @@ int main(void) {
         // State machine
         switch (currentState) {
             case STATE_WELCOME:
+                play_1000hz(50);
+                play_1500hz(50);
+                play_1000hz(50);
                 displayWelcomeScreen();
                 break;
                 
             case STATE_PRESS_BUTTON:
+                
                 displayPressButtonPrompt();
                 break;
                 
