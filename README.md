@@ -134,18 +134,40 @@ Integrate the HR sensor driver code to the main game project. Integrate the butt
 ## MVP Demo
 
 1. Show a system block diagram & explain the hardware implementation.
+
+- Same diagram without the optional wheel part
+
+
+- ![Diagram](./System_block_diagram.drawio.png)
+
+
 2. Explain your firmware implementation, including application logic and critical drivers you've written.
+
+- We implemented our firmware with our own I2C driver explicitly for the MAX30102 heart rate sensor. We used the LCD driver library as implemented in Lab 4, and the uart library as provided before. The firmware measures the heartrate continuously, and sets up the game stages based on the button press. Different stages are outputted to the LCD screen along with different sound effects by the buzzer. 
+
 3. Demo your device.
+
+- Demoed to James
+- ![1745005375808](image/README/1745005375808.png)
+
+
 4. Have you achieved some or all of your Software Requirements Specification (SRS)?
+- Achieved all but the optional motor SRS-05 and the SRS-02: *The HR sensor shall be measuring only while the button is pressed, to conceal its existance*. This requirement had some oversight that since the LED on the sensor is always on it becomes irrelevent to try to conceal on the software level.
+- Showed the data and outcome to James.
 
-   1. Show how you collected data and the outcomes.
 5. Have you achieved some or all of your Hardware Requirements Specification (HRS)?
+- Achieved all but the optional motor HRS-05.
+- Showed the data and outcome to James.
 
-   1. Show how you collected data and the outcomes.
 6. Show off the remaining elements that will make your project whole: mechanical casework, supporting graphical user interface (GUI), web portal, etc.
-7. What is the riskiest part remaining of your project?
+- Will get a new wooden panel for holding the button
+- Will glue the enclosure together, but might keep the tapes as an aethetic feature.
+- Will tune the GUI animations and the sound effects for better entertainment
 
+7. What is the riskiest part remaining of your project?
+- Getting the new panel
    1. How do you plan to de-risk this?
+   - Finding a bettern cutting station than the RPL
 8. What questions or help do you need from the teaching team?
 
 ## Final Project Report
