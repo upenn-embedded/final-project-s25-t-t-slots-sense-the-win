@@ -246,7 +246,7 @@ void displayMeasuringPrompt(void) {
     // First, clear screen and setup initial display
     if (animationFrame == 0) {
         LCD_setScreen(BLACK);
-        LCD_drawString(5, 15, "MEASURING PULSE...", CYAN, BLACK);
+        LCD_drawString(5, 15, "CHARGING UP YOUR WIN...", CYAN, BLACK);
         LCD_drawString(10, 70, "Keep holding button", WHITE, BLACK);
     }
     
@@ -285,9 +285,9 @@ void displaySpinningPrompt(void) {
     LCD_drawString(30, 15, "SPINNING!", MAGENTA, BLACK);
     
     // Display heart rate info
-    char hrBuffer[20];
-    sprintf(hrBuffer, "Your HR: %3d BPM", heartRate);
-    LCD_drawString(20, 30, hrBuffer, WHITE, BLACK);
+//    char hrBuffer[20];
+//    sprintf(hrBuffer, "Your HR: %3d BPM", heartRate);
+//    LCD_drawString(20, 30, hrBuffer, WHITE, BLACK);
     
     // Draw spinning wheels
     char symbols[4] = {'7', '$', '#', '@'};
@@ -300,7 +300,7 @@ void displaySpinningPrompt(void) {
         LCD_drawBlock(x - 10, 50, x + 10, 90, BLUE);
         
         // Draw current symbol
-        char symbol = symbols[(animationFrame + wheel) % 4];
+        char symbol = symbols[custom_rand_range(4)];
         LCD_drawChar(x - 3, 65, symbol, WHITE, BLUE);
     }
     
@@ -314,28 +314,43 @@ void displaySpinningPrompt(void) {
 // Display result screen
 void displayResultScreen(uint8_t win) {
     LCD_setScreen(BLACK);
+    char symbols[4] = {'7', '$', '#', '@'};
     
     if (win) {
         // Win screen
-        LCD_drawString(30, 30, "YOU WIN!", YELLOW, BLACK);
-        LCD_drawString(20, 50, "JACKPOT!!!", GREEN, BLACK);
+        LCD_drawString(30, 10, "YOU WIN!", YELLOW, BLACK);
+        LCD_drawString(20, 30, "JACKPOT!!!", GREEN, BLACK);
         
-        // Draw a smiley face
-        LCD_drawCircle(80, 90, 20, YELLOW);
-        LCD_drawCircle(70, 80, 3, BLACK);
-        LCD_drawCircle(90, 80, 3, BLACK);
-        LCD_drawBlock(70, 100, 90, 102, BLACK);
+        for (uint8_t wheel = 0; wheel < 3; wheel++) {
+            // Calculate position for each wheel
+            uint8_t x = 40 + wheel * 40;
+
+            // Draw wheel border
+            LCD_drawBlock(x - 10, 65, x + 10, 90, BLUE);
+
+            // Draw current symbol
+            char symbol = symbols[0];
+            LCD_drawChar(x - 3, 80, symbol, WHITE, BLUE);
+        }
     } else {
         // Lose screen
-        LCD_drawString(30, 40, "TRY AGAIN", RED, BLACK);
-        LCD_drawString(15, 60, "Better luck", WHITE, BLACK);
-        LCD_drawString(20, 75, "next time!", WHITE, BLACK);
+        LCD_drawString(30, 10, "TRY AGAIN", RED, BLACK);
+        LCD_drawString(15, 30, "Better luck", WHITE, BLACK);
+        LCD_drawString(20, 45, "next time!", WHITE, BLACK);
         
-        // Draw a sad face
-        LCD_drawCircle(80, 90, 20, YELLOW);
-        LCD_drawCircle(70, 80, 3, BLACK);
-        LCD_drawCircle(90, 80, 3, BLACK);
-        LCD_drawBlock(70, 102, 90, 104, BLACK);
+        
+    
+        for (uint8_t wheel = 0; wheel < 3; wheel++) {
+            // Calculate position for each wheel
+            uint8_t x = 40 + wheel * 40;
+
+            // Draw wheel border
+            LCD_drawBlock(x - 10, 65, x + 10, 90, BLUE);
+
+            // Draw current symbol
+            char symbol = symbols[custom_rand_range(4)];
+            LCD_drawChar(x - 3, 80, symbol, WHITE, BLUE);
+        }
     }
     
     // Wait for a moment
@@ -393,7 +408,7 @@ ISR(INT0_vect) {
 //    }
     
     // Button was pressed
-    printf("button pressed, buttonPressed = %d\n", buttonPressed);
+    printf("button pressed\n");
     animationFrame = 0;
     currentState = STATE_MEASURING;
 }
