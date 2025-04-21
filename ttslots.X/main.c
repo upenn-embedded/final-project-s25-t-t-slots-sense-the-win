@@ -102,6 +102,133 @@ void play_2000hz(uint16_t duration_ms) {
     }
 }
 
+// Additional buzzer frequency functions
+void play_750hz(uint16_t duration_ms) {
+    uint16_t cycles = duration_ms * 1.5;  // Each cycle is about 0.67ms for 750Hz
+    for (uint16_t i = 0; i < cycles; i++) {
+        PORTD |= (1 << BUZZER_PIN);
+        _delay_us(667);  // Half period for 750Hz = 667us
+        PORTD &= ~(1 << BUZZER_PIN);
+        _delay_us(667);
+    }
+}
+
+void play_1250hz(uint16_t duration_ms) {
+    uint16_t cycles = duration_ms * 2.5;  // Each cycle is about 0.4ms for 1250Hz
+    for (uint16_t i = 0; i < cycles; i++) {
+        PORTD |= (1 << BUZZER_PIN);
+        _delay_us(400);  // Half period for 1250Hz = 400us
+        PORTD &= ~(1 << BUZZER_PIN);
+        _delay_us(400);
+    }
+}
+
+void play_2500hz(uint16_t duration_ms) {
+    uint16_t cycles = duration_ms * 5;  // Each cycle is about 0.2ms for 2500Hz
+    for (uint16_t i = 0; i < cycles; i++) {
+        PORTD |= (1 << BUZZER_PIN);
+        _delay_us(200);  // Half period for 2500Hz = 200us
+        PORTD &= ~(1 << BUZZER_PIN);
+        _delay_us(200);
+    }
+}
+
+void play_3000hz(uint16_t duration_ms) {
+    uint16_t cycles = duration_ms * 6;  // Each cycle is about 0.167ms for 3000Hz
+    for (uint16_t i = 0; i < cycles; i++) {
+        PORTD |= (1 << BUZZER_PIN);
+        _delay_us(167);  // Half period for 3000Hz = 167us
+        PORTD &= ~(1 << BUZZER_PIN);
+        _delay_us(167);
+    }
+}
+
+// Sound pattern functions
+void play_welcome_theme(void) {
+    play_1000hz(80);
+    _delay_ms(20);
+    play_1500hz(80);
+    _delay_ms(20);
+    play_2000hz(100);
+    _delay_ms(30);
+    play_2500hz(150);
+}
+
+void play_button_press(void) {
+    play_1500hz(30);
+    play_2000hz(20);
+}
+
+void play_measuring_sound(void) {
+    play_750hz(30);
+    _delay_ms(10);
+    play_1000hz(30);
+    _delay_ms(10);
+    play_1250hz(30);
+}
+
+void play_spinning_sound(void) {
+    // Slot machine reel spinning sound
+    for (uint8_t i = 0; i < 3; i++) {
+        play_2000hz(10);
+        _delay_ms(5);
+        play_1500hz(10);
+        _delay_ms(5);
+    }
+}
+
+void play_win_sound(uint8_t big_win) {
+    if (big_win) {
+        // Exciting jackpot sound
+        play_2000hz(50);
+        _delay_ms(20);
+        play_2500hz(50);
+        _delay_ms(20);
+        play_3000hz(100);
+        _delay_ms(50);
+        play_2500hz(50);
+        _delay_ms(20);
+        play_3000hz(150);
+        _delay_ms(20);
+        play_2000hz(50);
+        _delay_ms(20);
+        play_2500hz(50);
+        _delay_ms(20);
+        play_3000hz(200);
+    } else {
+        // Smaller win sound
+        play_1500hz(40);
+        _delay_ms(20);
+        play_2000hz(40);
+        _delay_ms(20);
+        play_2500hz(80);
+        _delay_ms(30);
+        play_3000hz(120);
+    }
+}
+
+void play_lose_sound(void) {
+    // Downward wah-wah sound
+    play_1000hz(70);
+    _delay_ms(10);
+    play_750hz(70);
+    _delay_ms(10);
+    play_500hz(150);
+}
+
+void play_game_over_sound(void) {
+    // Game over jingle
+    play_1000hz(80);
+    _delay_ms(20);
+    play_750hz(80);
+    _delay_ms(20);
+    play_500hz(80);
+    _delay_ms(100);
+    play_750hz(80);
+    _delay_ms(20);
+    play_500hz(160);
+}
+
 bool init_peripherals(void) {
     // Initialize I2C at 400kHz
     i2c_init(I2C_FREQUENCY);
@@ -213,6 +340,7 @@ void setupButtonInterrupt(void) {
 // Display welcome screen
 void displayWelcomeScreen(void) {
     LCD_setScreen(BLACK);
+    play_welcome_theme();
     
     // Display title
     LCD_drawString(20, 20, "T&T SLOTS", YELLOW, BLACK);
@@ -307,12 +435,14 @@ void displayMeasuringPrompt(void) {
     switch(animationFrame % 4) {
         case 0:
             LCD_drawString(70, 40, "|", WHITE, BLACK);
+//            play_measuring_sound();
             break;
         case 1:
             LCD_drawString(70, 40, "/", WHITE, BLACK);
             break;
         case 2:
             LCD_drawString(70, 40, "-", WHITE, BLACK);
+//            play_measuring_sound();
             break;
         case 3:
             LCD_drawString(70, 40, "\\", WHITE, BLACK);
@@ -334,6 +464,10 @@ void displaySpinningPrompt(void) {
     
     // Draw header
     LCD_drawString(30, 15, "SPINNING!", MAGENTA, BLACK);
+    
+    if (animationFrame % 2 == 0) {
+        play_spinning_sound();
+    }
     
     // Display heart rate info
 //    char hrBuffer[20];
@@ -369,12 +503,18 @@ void displayResultScreen(uint8_t win) {
     char symbols[4] = {'7', '$', '#', '@'};
     
     if (win) {
-        play_2000hz(50);
-        play_1500hz(50);
-        play_2000hz(50);
+        uint8_t jackpot = (custom_rand_range(10) < 5);  // 20% chance of jackpot on win
+        
+        play_win_sound(jackpot);
+        
         // Win screen
-        LCD_drawString(30, 10, "YOU WIN!", YELLOW, BLACK);
-        LCD_drawString(20, 30, "JACKPOT!!!", GREEN, BLACK);
+        if (jackpot) {
+            LCD_drawString(30, 10, "JACKPOT!!", YELLOW, BLACK);
+            LCD_drawString(20, 30, "BIG WIN!!!", GREEN, BLACK);
+        } else {
+            LCD_drawString(30, 10, "YOU WIN!", YELLOW, BLACK);
+            LCD_drawString(20, 30, "GOOD LUCK!", GREEN, BLACK);
+        }
         
         for (uint8_t wheel = 0; wheel < 3; wheel++) {
             // Calculate position for each wheel
@@ -384,13 +524,11 @@ void displayResultScreen(uint8_t win) {
             LCD_drawBlock(x - 10, 65, x + 10, 90, BLUE);
 
             // Draw current symbol
-            char symbol = symbols[0];
+            char symbol = symbols[jackpot];
             LCD_drawChar(x - 3, 80, symbol, WHITE, BLUE);
         }
     } else {
-        play_500hz(50);
-        play_1000hz(50);
-        play_500hz(50);
+        play_lose_sound();
         // Lose screen
         LCD_drawString(30, 10, "TRY AGAIN", RED, BLACK);
         LCD_drawString(15, 30, "Better luck", WHITE, BLACK);
@@ -413,6 +551,8 @@ void displayResultScreen(uint8_t win) {
     
     // Wait for a moment
     _delay_ms(3000);
+    play_game_over_sound();
+    _delay_ms(250);
     
     // Return to welcome screen
     currentState = STATE_WELCOME;
@@ -468,6 +608,7 @@ ISR(INT0_vect) {
     // Button was pressed
     printf("button pressed\n");
     if (currentState == STATE_PRESS_BUTTON) {
+        play_button_press();
         animationFrame = 0;
         currentState = STATE_MEASURING;      
     }
@@ -502,27 +643,17 @@ ISR(INT1_vect) {
                             
                             // Process samples to calculate heart rate and SpO2
                             if (max30102_calculate_hr_spo2(samples, sample_count, &result)) {
-                                // Print sample data and results
-//                                for (uint8_t i = 0; i < sample_count && i < 1; i++) {
-//                                    printf("%lu\t%lu\t", samples[i].red, samples[i].ir);
-//                                }
                                 
                                 heartRateReady = result.hr_valid;
                                 
                                 // Print heart rate and validity
                                 if (heartRateReady) {
-                                    printf("%ld\tValid\t\t\n", result.heart_rate);
+//                                    printf("%ld\tValid\t\t\n", result.heart_rate);
                                     heartRate = result.heart_rate;
                                 } else {
-                                    printf("--\tInvalid\t\t\n");
+//                                    printf("--\tInvalid\t\t\n");
                                 }
-                                
-                                // Print SpO2 and validity
-//                                if (result.spo2_valid) {
-//                                    printf("%ld%%\tValid\r\n", result.spo2);
-//                                } else {
-//                                    printf("--%%\tInvalid\r\n");
-//                                }
+
                             }
                         }
                     }
@@ -560,9 +691,9 @@ int main(void) {
         // State machine
         switch (currentState) {
             case STATE_WELCOME:
-                play_1000hz(50);
-                play_1500hz(50);
-                play_1000hz(50);
+//                play_1000hz(50);
+//                play_1500hz(50);
+//                play_1000hz(50);
                 displayWelcomeScreen();
                 break;
                 
