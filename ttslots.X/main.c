@@ -36,6 +36,7 @@ typedef enum {
 SlotMachineState currentState = STATE_WELCOME;
 volatile uint8_t buttonPressed = 0;
 uint8_t animationFrame = 0;
+uint8_t measureAnime = 0;
 max30102_result_t result;
 volatile uint32_t heartRate;
 volatile bool heartRateReady = false;
@@ -51,7 +52,7 @@ void displayMeasuringPrompt(void);
 void displaySpinningPrompt(void);
 void displayResultScreen(uint8_t win);
 void setupButtonInterrupt(void);
-uint8_t determineWinOdds(uint32_t heartRate);
+uint8_t determineWinOdds(void);
 uint16_t custom_rand(void);
 uint16_t custom_rand_range(uint16_t max);
 
@@ -374,7 +375,7 @@ void displayPressButtonPrompt(void) {
         LCD_drawString(15, 15, "READY TO PLAY?", GREEN, BLACK);
         
         // Draw button prompt
-        LCD_drawString(5, 40, "Press the Button", WHITE, BLACK);
+        LCD_drawString(5, 40, "Press the Button (gently)", WHITE, BLACK);
         LCD_drawString(20, 55, "to try your luck!", WHITE, BLACK);
         
         // Draw a simple button graphic
@@ -423,11 +424,15 @@ void displayMeasuringPrompt(void) {
 //    printf("measuring1\n");
     
     // First, clear screen and setup initial display
-    if (animationFrame == 0) {
+    if (measureAnime == 0) {
+        measureAnime = 1;
         LCD_setScreen(BLACK);
         LCD_drawString(5, 15, "CHARGING UP YOUR WIN...", CYAN, BLACK);
-        LCD_drawString(10, 70, "Keep holding button", WHITE, BLACK);
+        LCD_drawString(10, 70, "Keep finger on button top...", WHITE, BLACK);
+        LCD_drawString(10, 85, "and press more times!", WHITE, BLACK);
     }
+    
+
     
 //    printf("measuring3\n");
     
@@ -560,28 +565,29 @@ void displayResultScreen(uint8_t win) {
 
 
 // Determine win odds based on heart rate
-uint8_t determineWinOdds(uint32_t heartRate) {
+uint8_t determineWinOdds() {
     // Win logic according to SRS-03:
     // If HR is low, increase odds of winning
     // If HR is high, decrease odds to elongate play
     
     // Define heart rate thresholds
     #define LOW_HR_THRESHOLD 80
-    #define HIGH_HR_THRESHOLD 100
+    #define HIGH_HR_THRESHOLD 120
     
-    uint8_t winPercentage;
+    uint8_t winPercentage = 100;
+    
+    printf("HR used to determine odd: %u\n", heartRate);
     
     if (heartRate < LOW_HR_THRESHOLD) {
-        // Low heart rate - higher odds (up to 40%)
-        // winPercentage = 40 - ((heartRate * 30) / LOW_HR_THRESHOLD);
+        // Low heart rate - guarantee win 
         winPercentage = 100;
     } else if (heartRate > HIGH_HR_THRESHOLD) {
         // High heart rate - lower odds (down to 5%)
-        winPercentage = 10 - ((heartRate - HIGH_HR_THRESHOLD) / 10);
+        winPercentage = 20 - ((heartRate - HIGH_HR_THRESHOLD) / 10);
         if (winPercentage < 5) winPercentage = 5;
     } else {
         // Medium heart rate - medium odds (10-20%)
-        winPercentage = 20 - ((heartRate - LOW_HR_THRESHOLD) / 5);
+        winPercentage = 50 - ((heartRate - LOW_HR_THRESHOLD) / 2);
     }
     
     printf("Win odds: %u%%\r\n", winPercentage);
@@ -610,7 +616,8 @@ ISR(INT0_vect) {
     if (currentState == STATE_PRESS_BUTTON) {
         play_button_press();
         animationFrame = 0;
-        currentState = STATE_MEASURING;      
+        currentState = STATE_MEASURING;  
+        
     }
 }
 
@@ -691,20 +698,15 @@ int main(void) {
         // State machine
         switch (currentState) {
             case STATE_WELCOME:
-//                play_1000hz(50);
-//                play_1500hz(50);
-//                play_1000hz(50);
                 displayWelcomeScreen();
                 break;
                 
             case STATE_PRESS_BUTTON:
-                
                 displayPressButtonPrompt();
                 break;
                 
             case STATE_MEASURING:
                 displayMeasuringPrompt();
-                loop_count++;
        
                 if (heartRateReady) {
                     printf("HR=%u BPM\r\n", heartRate);
@@ -726,7 +728,7 @@ int main(void) {
                     spinCount = 0;
                     
                     // Determine win based on heart rate
-                    uint8_t winPercentage = determineWinOdds(heartRate);
+                    uint8_t winPercentage = determineWinOdds();
                     uint8_t randomValue = custom_rand_range(100);
                     uint8_t win = (randomValue < winPercentage);
                     
