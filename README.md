@@ -210,6 +210,9 @@ If you’ve never made a GitHub pages website before, you can follow this webpag
 | SRS-04 | The buzzer shall play varied exciting tunes, encouraging continued play, and shall react to game outcomes. | Confirmed. The buzzer plays various exciting and engaging tones in different stages of gameplay. |
 | SRS-05 | If implemented, the wheels should begin spinning on button press, and sequentially stop after the button release, according to the game outcome.| Not implemented. |
 
+SRS-03 UART result sample
+![1745943430504](image/README/1745943430504.png)
+
 
 #### 3.2 Hardware Requirements Specification (HRS) Results
 
@@ -221,11 +224,14 @@ If you’ve never made a GitHub pages website before, you can follow this webpag
 
 | ID     | Description                                                                                                                        | Validation Outcome                                                                                                      |
 | ------ | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| HRS-01 |A heart rate monitor shall be used for monitoring user vital signs. It should be able to measure HR in the range 50-180 BPM. | Confirmed. The sensor is able to measure HR at least 50-120 BPM.|
+| HRS-01 |A heart rate monitor shall be used for monitoring user vital signs. It should be able to measure HR in the range 50-180 BPM. | Partly Confirmed. The sensor is able to measure HR at least 50-120 BPM.|
 | HRS-02 | A buzzer shall be able play various sound frequencies and patterns in a pleasant manner. | Confirmed. The buzzer is able to play various sound. |
 | HRS-03 | A display shall be able to display prompts, information and potentially animations to the user. | Confirmed. The display is able to play prompts, results, and animations. |
 | HRS-04 | A button shall be made big enough to conceal the HR sensor, while being transparent in the region required for measurements. | Confirmed. A button is customly made to fit in the heart rate sensor, although not fulling concealling since the heart rate sensor can only work under transparent topping. |
 | HRS-05 | If implemented, the motors spinning the slot wheels should have variable speed, make the clicking sounds specific to slot machines, and be able to stop at precises positions according to the game outcome. | Not implemented. |
+
+HRS-01
+![1745944164881](image/README/1745944164881.png)
 
 ### 4. Conclusion
 

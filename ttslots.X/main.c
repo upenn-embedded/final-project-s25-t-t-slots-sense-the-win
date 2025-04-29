@@ -106,7 +106,8 @@ void play_2000hz(uint16_t duration_ms) {
 // Additional buzzer frequency functions
 void play_750hz(uint16_t duration_ms) {
     uint16_t cycles = duration_ms * 1.5;  // Each cycle is about 0.67ms for 750Hz
-    for (uint16_t i = 0; i < cycles; i++) {
+    for (uint16_t i = 0; i 
+            < cycles; i++) {
         PORTD |= (1 << BUZZER_PIN);
         _delay_us(667);  // Half period for 750Hz = 667us
         PORTD &= ~(1 << BUZZER_PIN);
