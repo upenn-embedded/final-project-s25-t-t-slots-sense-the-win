@@ -49,7 +49,7 @@ uint8_t determineWinOdds() {
 }
 ```
 
-![1745943430504](../image/README/1745943430504.png)
+![1745943430504](1745943430504.png)
 
 Our final design (... more conclusions about SRS ...)
 
@@ -63,7 +63,7 @@ Our final design (... more conclusions about SRS ...)
 | HRS-04 | A button shall be made big enough to conceal the HR sensor, while being transparent in the region required for measurements. | Confirmed. A button is customly made to fit in the heart rate sensor, although not fulling concealling since the heart rate sensor can only work under transparent topping. See pictures.|
 | HRS-05 | If implemented, the motors spinning the slot wheels should have variable speed, make the clicking sounds specific to slot machines, and be able to stop at precises positions according to the game outcome. | Not implemented. |
 
-**HRS-01** - ![1745944164881](../image/README/1745944164881.png)
+**HRS-01** - ![1745944164881](1745944164881.png)
 
 **HRS-02** - 
 
