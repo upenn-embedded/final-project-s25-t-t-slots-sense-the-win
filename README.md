@@ -204,7 +204,12 @@ If you’ve never made a GitHub pages website before, you can follow this webpag
 
 | ID     | Description                                                                                               | Validation Outcome                                                                          |
 | ------ | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| SRS-01 | The IMU 3-axis acceleration will be measured with 16-bit depth every 100 milliseconds +/-10 milliseconds. | Confirmed, logged output from the MCU is saved to "validation" folder in GitHub repository. |
+| SRS-01 | The ATmega shall continuously prompt the user to play, telling them to keep their hand pressing the button until the HR sensor establishes their pulse.    | Confirmed. The LCD display will show up a prompt screen when the sensor have not obtained a heart rate reading. |
+| SRS-02 | The HR sensor shall be measuring only while the button is pressed, to conceal its existance |Deprecated. This SRS becomes irrelevant since the button is transparent and sensor is clearly visible, there's no point in hiding the sensor's existence from software level. |                                                                                   
+| SRS-03 | Upon button release, the ATmega shall change the odds in the following manner: if the HR is low, increase odds of winning to increase excitement, HR, and engagement. If HR is high, decrease odds to elongate play, build anticipation, and increase profits. | Confirmed. The determineWinOdds() function will change the odds accordingly and print winning odds to uart. |
+| SRS-04 | The buzzer shall play varied exciting tunes, encouraging continued play, and shall react to game outcomes. | Confirmed. The buzzer plays various exciting and engaging tones in different stages of gameplay. |
+| SRS-05 | If implemented, the wheels should begin spinning on button press, and sequentially stop after the button release, according to the game outcome.| Not implemented. |
+
 
 #### 3.2 Hardware Requirements Specification (HRS) Results
 
@@ -216,22 +221,37 @@ If you’ve never made a GitHub pages website before, you can follow this webpag
 
 | ID     | Description                                                                                                                        | Validation Outcome                                                                                                      |
 | ------ | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| HRS-01 | A distance sensor shall be used for obstacle detection. The sensor shall detect obstacles at a maximum distance of at least 10 cm. | Confirmed, sensed obstacles up to 15cm. Video in "validation" folder, shows tape measure and logged output to terminal. |
-|        |                                                                                                                                    |                                                                                                                         |
+| HRS-01 |A heart rate monitor shall be used for monitoring user vital signs. It should be able to measure HR in the range 50-180 BPM. | Confirmed. The sensor is able to measure HR at least 50-120 BPM.|
+| HRS-02 | A buzzer shall be able play various sound frequencies and patterns in a pleasant manner. | Confirmed. The buzzer is able to play various sound. |
+| HRS-03 | A display shall be able to display prompts, information and potentially animations to the user. | Confirmed. The display is able to play prompts, results, and animations. |
+| HRS-04 | A button shall be made big enough to conceal the HR sensor, while being transparent in the region required for measurements. | Confirmed. A button is customly made to fit in the heart rate sensor, although not fulling concealling since the heart rate sensor can only work under transparent topping. |
+| HRS-05 | If implemented, the motors spinning the slot wheels should have variable speed, make the clicking sounds specific to slot machines, and be able to stop at precises positions according to the game outcome. | Not implemented. |
 
 ### 4. Conclusion
 
 Reflect on your project. Some questions to address:
 
 * What did you learn from it?
+   * I2C communication library writing.
+   * Mechanical customization for tight hardware integration.
 * What went well?
+   * Pretty much everything.
 * What accomplishments are you proud of?
+   * Beautifully engineered button with integrated sensor.
 * What did you learn/gain from this experience?
+   * I2C communication library writing.
+   * Mechanical customization for tight hardware integration.
 * Did you have to change your approach?
+   * No
 * What could have been done differently?
+   * The results could have been driven by motors and mechanical wheels if we had more time.
 * Did you encounter obstacles that you didn’t anticipate?
+   * No.
 * What could be a next step for this project?
+   * Find a way to integrate a mechanical wheel for the spinning.
 
 ## References
 
 Fill in your references here as you work on your final project. Describe any libraries used here.
+
+* LCD SPI library for Lab 4, as implemented by Yiding Tian.
