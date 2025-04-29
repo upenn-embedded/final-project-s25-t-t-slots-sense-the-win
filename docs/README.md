@@ -81,7 +81,7 @@ Our final design satisfies most of our HRSs, with only one omissions where the r
 
 ### Conclusions
 
-**Tony:** I believe (...)
+**Tony:** I learnt a lot writing the firmware of our slot machine, especially when writing the I2C driver for the heart rate sensor. The first approach to "reverse engineer" James' i2c.h provided in the worksheet before did not work quite so well, so I went back and wrote everything from scratch. I first wrote the driver in its standalone package, then integrated with the main gameplay code. Everything else went on pretty smooth for me in the firmware side. I will carry on this experience developing a driver for peripherals into my future projects.
 
 **Theodor:** My experience (...)
 
