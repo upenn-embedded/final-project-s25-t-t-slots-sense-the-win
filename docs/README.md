@@ -10,11 +10,43 @@
 
 **SRS-01** - See demo video
 
-**SRS-02** - See demo video
+**SRS-02** - Deprecated for reliability. We also noticed during demo days that even though people knew the slot machine was unfair, and they saw their HR was measured constantly, they would still play.
 
-**SRS-03** - `Insert formula here`
+**SRS-03** :
 
-**SRS-04** - We have multiple sound effects which are achieved via **TODO**, and they are initiated via functions like `TODO`
+```c
+// Determine win odds based on heart rate
+uint8_t determineWinOdds() {
+    // Win logic according to SRS-03:
+    // If HR is low, increase odds of winning
+    // If HR is high, decrease odds to elongate play
+    
+    // Define heart rate thresholds
+    #define LOW_HR_THRESHOLD 80
+    #define HIGH_HR_THRESHOLD 120
+    
+    uint8_t winPercentage = 100;
+    
+    printf("HR used to determine odd: %u\n", heartRate);
+    
+    if (heartRate < LOW_HR_THRESHOLD) {
+        // Low heart rate - guarantee win 
+        winPercentage = 100;
+    } else if (heartRate > HIGH_HR_THRESHOLD) {
+        // High heart rate - lower odds (down to 5%)
+        winPercentage = 20 - ((heartRate - HIGH_HR_THRESHOLD) / 10);
+        if (winPercentage < 5) winPercentage = 5;
+    } else {
+        // Medium heart rate - medium odds (10-20%)
+        winPercentage = 50 - ((heartRate - LOW_HR_THRESHOLD) / 2);
+    }
+    
+    printf("Win odds: %u%%\r\n", winPercentage);
+    return winPercentage;
+}
+```
+
+**SRS-04** - We have multiple sound effects which are achieved via delay-based PWM, and they are initiated via functions like `play_500hz`, `play_1000hz`, `play_1500hz`, `play_750hz`, allowing us to string up notes
 
 Our final design (... more conclusions about SRS ...)
 
@@ -26,7 +58,11 @@ Our final design (... more conclusions about SRS ...)
 
 **HRS-03** - See demo video
 
-**HRS-04** - *Insert button with HR sensor picture*
+**HRS-04** - See pictures below
+
+| ![HRS_04_01.jpeg](HRS_04_01.jpeg) | ![HRS_04_02.jpeg](HRS_04_02.jpeg) |
+|:---: |:---: |
+| Top view  | Side view  |
 
 Our final design (... more conclusions about HRS ...)
 
