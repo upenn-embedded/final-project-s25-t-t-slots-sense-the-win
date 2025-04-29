@@ -51,7 +51,7 @@ uint8_t determineWinOdds() {
 
 ![1745943430504](1745943430504.png)
 
-Our final design (... more conclusions about SRS ...)
+Our final design satisfies most of our SRSs, with some omissions where the required timeline or user testing informed our decision to not implement certain extra features or stray from our initial thoughts of what the project should look like. Overall, our SRSs did help guide our progress, and this is definitely a technique we will use in future projects as well.
 
 ### HRS Validation
 
@@ -77,7 +77,7 @@ Our final design (... more conclusions about SRS ...)
 |:---: |:---: |
 | Top view  | Side view  |
 
-Our final design (... more conclusions about HRS ...)
+Our final design satisfies most of our HRSs, with only one omissions where the required timeline informed our decision to not implement certain extra features. Validation for certain numerical values also proved difficult because of biological constrains of healthy humans, but overall, our HRSs did help guide our progress, and this is definitely a technique we will use in future projects as well.
 
 ### Conclusions
 
@@ -87,42 +87,28 @@ Our final design (... more conclusions about HRS ...)
 
 ### References
 
-**TODO: insert all documentation used**
+* LCD SPI library for Lab 4, as implemented by Yiding Tian.
+* UART library from UPenn Embedded
 
-### TODOs
-
-At the bare minimum, the page must have:
-
-- [ ] A video of the final product
-
->The video must demonstrate your project’s key functionality.
->The video must be 5 minutes or less.
->Ensure your video link is accessible to the teaching team. Unlisted YouTube videos or Google Drive uploads with SEAS account access work well.
->Points will be removed if the audio quality is poor - say, if you filmed your video in a noisy electrical engineering lab.
-
-- [ ] Images of the final product
-        Include photos of your device from a few angles.
-        If you have a casework, show the exterior and interior (where the good EE bits are!)
-
-SRS Validation
-
-- [ ] Based on your quantified system performance, comment on how you achieved or fell short of your expected software requirements.
-- [ ] Validate at least two software requirements, showing how you tested and your proof of work (videos, images, logic analyzer/oscilloscope captures, etc.).
-
-HRS Validation
-
-- [ ] Based on your quantified system performance, comment on how you achieved or fell short of your expected hardware requirements.
-- [ ] Validate at least two hardware requirements, showing how you tested and your proof of work (videos, images, logic analyzer/oscilloscope captures, etc.).
-
-Conclusion
+### Conclusion
 
 Reflect on your project. Some questions to address:
 
-- [ ] What did you learn from it?
-- [ ] What went well?
-- [ ] What accomplishments are you proud of?
-- [ ] What did you learn/gain from this experience?
-- [ ] Did you have to change your approach?
-- [ ] What could have been done differently?
-- [ ] Did you encounter obstacles that you didn’t anticipate?
-- [ ] What could be a next step for this project?
+* What did you learn from it?
+   * I2C communication library writing.
+   * Mechanical customization for tight hardware integration.
+* What went well?
+   * Pretty much everything.
+* What accomplishments are you proud of?
+   * Beautifully engineered button with integrated sensor.
+* What did you learn/gain from this experience?
+   * I2C communication library writing.
+   * Mechanical customization for tight hardware integration.
+* Did you have to change your approach?
+   * No
+* What could have been done differently?
+   * The results could have been driven by motors and mechanical wheels if we had more time.
+* Did you encounter obstacles that you didn’t anticipate?
+   * No.
+* What could be a next step for this project?
+   * Find a way to integrate a mechanical wheel for the spinning.
